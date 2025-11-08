@@ -16,6 +16,109 @@ do_action( 'hestia_before_single_post_wrapper' );
 		<div class="container">
 
 <?php if (have_posts()) : while (have_posts()) : the_post(); 
+	/**
+	 * Fonction helper pour extraire l'ID d'un champ ACF relationship
+	 * Selon acf.json, les champs relationship ont return_format: "object" et max: 1
+	 * @param mixed $field_value Valeur du champ ACF (peut être objet, tableau ou ID)
+	 * @return int|null ID extrait ou null
+	 */
+	function extract_acf_relationship_id($field_value) {
+		if (!$field_value) {
+			return null;
+		}
+		
+		// Si c'est un objet WP_Post (format attendu selon ACF config)
+		if (is_object($field_value) && isset($field_value->ID)) {
+			return $field_value->ID;
+		}
+		
+		// Si c'est un tableau (fallback pour compatibilité)
+		if (is_array($field_value) && !empty($field_value)) {
+			$first_item = $field_value[0];
+			if (is_object($first_item) && isset($first_item->ID)) {
+				return $first_item->ID;
+			}
+			if (is_numeric($first_item)) {
+				return $first_item;
+			}
+		}
+		
+		// Si c'est directement un ID numérique
+		if (is_numeric($field_value)) {
+			return $field_value;
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Fonction helper pour récupérer les données d'un jeu pour l'affichage dans les listes
+	 * Utilise les champs ACF personnalisés avec fallback sur les valeurs par défaut
+	 * @param WP_Post|int $game Le post du jeu ou son ID
+	 * @return array Tableau avec les données du jeu (image, titre, description, payment_url, city_name)
+	 */
+	function get_game_display_data($game) {
+		$game_id = is_object($game) ? $game->ID : $game;
+		
+		// Image : utilise image_liste ACF, sinon thumbnail, sinon image par défaut
+		$image_liste = get_field('image_liste', $game_id);
+		$game_image = '';
+		if ($image_liste) {
+			if (is_array($image_liste) && isset($image_liste['url'])) {
+				$game_image = $image_liste['url'];
+			} elseif (is_string($image_liste)) {
+				$game_image = $image_liste;
+			} elseif (is_numeric($image_liste)) {
+				$game_image = wp_get_attachment_image_url($image_liste, 'medium');
+			}
+		}
+		if (empty($game_image)) {
+			$game_image = get_the_post_thumbnail_url($game_id, 'medium');
+		}
+		if (empty($game_image)) {
+			$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
+		}
+		
+		// Titre : utilise titre_liste ACF, sinon post_title
+		$titre_liste = get_field('titre_liste', $game_id);
+		$game_title = !empty($titre_liste) ? $titre_liste : get_the_title($game_id);
+		
+		// Description : utilise description_liste ACF, sinon excerpt, sinon texte par défaut
+		$description_liste = get_field('description_liste', $game_id);
+		$game_excerpt = !empty($description_liste) ? $description_liste : get_the_excerpt($game_id);
+		if (empty($game_excerpt)) {
+			$game_excerpt = 'Découvrez ce jeu de piste unique dans cette ville.';
+		}
+		
+		// URL de paiement
+		$payment_url = get_field('payment_url', $game_id);
+		if (empty($payment_url)) {
+			$payment_url = get_permalink($game_id);
+		}
+		
+		// Ville
+		$related_city = get_field('city', $game_id);
+		$related_city_name = '';
+		if ($related_city) {
+			if (is_object($related_city) && isset($related_city->post_title)) {
+				$related_city_name = $related_city->post_title;
+			} else {
+				$city_id = extract_acf_relationship_id($related_city);
+				if ($city_id) {
+					$related_city_name = get_the_title($city_id);
+				}
+			}
+		}
+		
+		return array(
+			'image' => $game_image,
+			'title' => $game_title,
+			'excerpt' => $game_excerpt,
+			'payment_url' => $payment_url,
+			'city_name' => $related_city_name
+		);
+	}
+	
 	$region_id = get_the_ID();
 	$region_name = get_the_title() ?: 'Nouvelle-Aquitaine';
 	
@@ -81,38 +184,21 @@ do_action( 'hestia_before_single_post_wrapper' );
 		));
 		
 		// Filtrer les départements qui ont cette région
+		// Selon acf.json : departement.region → region (relationship, return_format: object, max: 1)
 		$filtered_departements = array();
 		if (!empty($departements)) {
 			foreach ($departements as $departement) {
 				$region_field = get_field('region', $departement->ID);
-				$has_region = false;
+				$reg_id = extract_acf_relationship_id($region_field);
 				
-				if ($region_field) {
-					if (is_array($region_field)) {
-						foreach ($region_field as $reg) {
-							$reg_id = is_object($reg) ? $reg->ID : (is_numeric($reg) ? $reg : null);
-							if ($reg_id == $region_id) {
-								$has_region = true;
-								break;
-							}
-						}
-					} elseif (is_object($region_field)) {
-						if ($region_field->ID == $region_id) {
-							$has_region = true;
-						}
-					} elseif (is_numeric($region_field) && $region_field == $region_id) {
-						$has_region = true;
-					}
-				}
-				
-				if ($has_region) {
+				if ($reg_id == $region_id) {
 					$filtered_departements[] = $departement;
 				}
 			}
 		}
 		
 		// 2. Pour chaque département, récupérer les villes qui ont ce département dans leur champ 'ville'
-		// Le champ 'ville' est sur le post type 'ville' et pointe vers 'departement'
+		// Selon acf.json : ville.ville → departement (relationship, return_format: object, max: 1)
 		$villes_ids = array();
 		$departement_ids = array();
 		foreach ($filtered_departements as $departement) {
@@ -128,32 +214,15 @@ do_action( 'hestia_before_single_post_wrapper' );
 		
 		foreach ($all_villes as $ville) {
 			$ville_departement_field = get_field('ville', $ville->ID);
-			$has_departement = false;
+			$dep_id = extract_acf_relationship_id($ville_departement_field);
 			
-			if ($ville_departement_field) {
-				if (is_array($ville_departement_field)) {
-					foreach ($ville_departement_field as $dep) {
-						$dep_id = is_object($dep) ? $dep->ID : (is_numeric($dep) ? $dep : null);
-						if ($dep_id && in_array($dep_id, $departement_ids)) {
-							$has_departement = true;
-							break;
-						}
-					}
-				} elseif (is_object($ville_departement_field)) {
-					if (in_array($ville_departement_field->ID, $departement_ids)) {
-						$has_departement = true;
-					}
-				} elseif (is_numeric($ville_departement_field) && in_array($ville_departement_field, $departement_ids)) {
-					$has_departement = true;
-				}
-			}
-			
-			if ($has_departement) {
+			if ($dep_id && in_array($dep_id, $departement_ids)) {
 				$villes_ids[] = $ville->ID;
 			}
 		}
 		
 		// 3. Pour chaque ville, récupérer les jeux
+		// Selon acf.json : game.city → ville (relationship, return_format: object, max: 1)
 		$villes_ids = array_unique($villes_ids);
 		foreach ($villes_ids as $ville_id) {
 			$all_games = get_posts(array(
@@ -164,28 +233,12 @@ do_action( 'hestia_before_single_post_wrapper' );
 			
 			foreach ($all_games as $game) {
 				$city_field = get_field('city', $game->ID);
-				$has_city = false;
+				$city_id = extract_acf_relationship_id($city_field);
 				
-				if ($city_field) {
-					if (is_array($city_field)) {
-						foreach ($city_field as $city) {
-							$city_id = is_object($city) ? $city->ID : (is_numeric($city) ? $city : null);
-							if ($city_id == $ville_id) {
-								$has_city = true;
-								break;
-							}
-						}
-					} elseif (is_object($city_field)) {
-						if ($city_field->ID == $ville_id) {
-							$has_city = true;
-						}
-					} elseif (is_numeric($city_field) && $city_field == $ville_id) {
-						$has_city = true;
+				if ($city_id == $ville_id) {
+					if (!in_array($game, $games, true)) {
+						$games[] = $game;
 					}
-				}
-				
-				if ($has_city && !in_array($game, $games, true)) {
-					$games[] = $game;
 				}
 			}
 		}
@@ -288,19 +341,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 									foreach ($first_two_games as $game) : 
 										// Gérer les jeux réels et les jeux de fallback
 										if (isset($game->ID) && $game->ID > 0) {
-											$game_image = get_the_post_thumbnail_url($game->ID, 'full');
-											if (empty($game_image)) {
-												$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
-											}
-											$game_excerpt = get_the_excerpt($game->ID);
-											if (empty($game_excerpt)) {
-												$game_excerpt = isset($game->post_excerpt) ? $game->post_excerpt : 'Découvrez ce jeu de piste unique dans cette ville.';
-											}
-											$payment_url = get_field('payment_url', $game->ID);
-											if (empty($payment_url)) {
-												$payment_url = get_permalink($game->ID);
-											}
-											$game_title = $game->post_title;
+											$game_data = get_game_display_data($game);
+											$game_image = $game_data['image'];
+											$game_title = $game_data['title'];
+											$game_excerpt = $game_data['excerpt'];
+											$payment_url = $game_data['payment_url'];
 										} else {
 											// Jeu de fallback
 											$game_image = isset($game->fallback_image) ? $game->fallback_image : 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
@@ -349,19 +394,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 							foreach ($remaining_games as $game) : 
 								// Gérer les jeux réels et les jeux de fallback
 								if (isset($game->ID) && $game->ID > 0) {
-									$game_image = get_the_post_thumbnail_url($game->ID, 'full');
-									if (empty($game_image)) {
-										$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-biarritzSMALL.jpg';
-									}
-									$game_excerpt = get_the_excerpt($game->ID);
-									if (empty($game_excerpt)) {
-										$game_excerpt = isset($game->post_excerpt) ? $game->post_excerpt : 'Découvrez ce jeu de piste unique dans cette ville.';
-									}
-									$payment_url = get_field('payment_url', $game->ID);
-									if (empty($payment_url)) {
-										$payment_url = get_permalink($game->ID);
-									}
-									$game_title = $game->post_title;
+									$game_data = get_game_display_data($game);
+									$game_image = $game_data['image'];
+									$game_title = $game_data['title'];
+									$game_excerpt = $game_data['excerpt'];
+									$payment_url = $game_data['payment_url'];
 								} else {
 									// Jeu de fallback
 									$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-biarritzSMALL.jpg';
@@ -397,19 +434,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 							foreach ($more_games as $game) : 
 								// Gérer les jeux réels et les jeux de fallback
 								if (isset($game->ID) && $game->ID > 0) {
-									$game_image = get_the_post_thumbnail_url($game->ID, 'full');
-									if (empty($game_image)) {
-										$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-biarritzSMALL.jpg';
-									}
-									$game_excerpt = get_the_excerpt($game->ID);
-									if (empty($game_excerpt)) {
-										$game_excerpt = isset($game->post_excerpt) ? $game->post_excerpt : 'Découvrez ce jeu de piste unique dans cette ville.';
-									}
-									$payment_url = get_field('payment_url', $game->ID);
-									if (empty($payment_url)) {
-										$payment_url = get_permalink($game->ID);
-									}
-									$game_title = $game->post_title;
+									$game_data = get_game_display_data($game);
+									$game_image = $game_data['image'];
+									$game_title = $game_data['title'];
+									$game_excerpt = $game_data['excerpt'];
+									$payment_url = $game_data['payment_url'];
 								} else {
 									// Jeu de fallback
 									$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-biarritzSMALL.jpg';
@@ -425,6 +454,66 @@ do_action( 'hestia_before_single_post_wrapper' );
 									<p style="font-size: 14px; margin-bottom: 20px;"><?php echo esc_html($game_excerpt); ?></p>
 									<a href="<?php echo esc_url($payment_url); ?>" class="btn btn-primary" style="display: inline-block; padding: 8px 20px; background: #e91e63; color: white; text-decoration: none; border-radius: 3px; font-size: 14px;">
 										<i class="far fa-calendar-alt" style="margin-right: 5px;"></i> Réserver
+									</a>
+								</div>
+							</div>
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+					
+					<!-- ===================== JEUX QUI PEUVENT VOUS INTÉRESSER ===================== -->
+					<?php 
+					// Créer une sélection de jeux pour le bloc "Jeux qui peuvent vous intéresser"
+					// Prendre les jeux déjà récupérés et en sélectionner quelques-uns (max 6)
+					$related_games_region = array();
+					if (!empty($games)) {
+						// Mélanger les jeux pour avoir une sélection variée
+						$shuffled_games = $games;
+						shuffle($shuffled_games);
+						$related_games_region = array_slice($shuffled_games, 0, 6);
+					}
+					?>
+					<?php if (!empty($related_games_region)) : ?>
+						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+						<h2 style="text-align: center; margin-bottom: 40px;">Jeux qui peuvent vous intéresser</h2>
+						<div class="row" style="margin-bottom: 60px;">
+							<?php foreach ($related_games_region as $related_game) : 
+								// Gérer les jeux réels et les jeux de fallback
+								if (isset($related_game->ID) && $related_game->ID > 0) {
+									$game_data = get_game_display_data($related_game);
+									$game_image = $game_data['image'];
+									$game_title = $game_data['title'];
+									$game_excerpt = $game_data['excerpt'];
+									$payment_url = $game_data['payment_url'];
+									$related_city_name = $game_data['city_name'];
+								} else {
+									// Jeu de fallback
+									$game_image = isset($related_game->fallback_image) ? $related_game->fallback_image : 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
+									$game_excerpt = isset($related_game->post_excerpt) ? $related_game->post_excerpt : 'Découvrez ce jeu de piste unique dans cette ville.';
+									$payment_url = '#';
+									$game_title = isset($related_game->post_title) ? $related_game->post_title : 'Jeu de piste';
+									$related_city_name = '';
+								}
+							?>
+							<div class="col-md-4" style="margin-bottom: 30px;">
+								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+									<a href="<?php echo esc_url(isset($related_game->ID) && $related_game->ID > 0 ? get_permalink($related_game->ID) : $payment_url); ?>" style="text-decoration: none; color: inherit; display: block;">
+										<img src="<?php echo esc_url($game_image); ?>" alt="<?php echo esc_attr($game_title); ?>" style="width: 100%; height: 200px; object-fit: cover;" />
+										<div style="padding: 20px;">
+											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37;"><?php echo esc_html($game_title); ?></h3>
+											<?php if ($related_city_name) : ?>
+												<p style="margin: 0 0 10px; color: #6b7280; font-size: 14px; font-weight: 500;">
+													<i style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" data-lucide="map-pin"></i>
+													<?php echo esc_html($related_city_name); ?>
+												</p>
+											<?php endif; ?>
+											<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5;"><?php echo esc_html(wp_trim_words($game_excerpt, 20)); ?></p>
+											<div style="text-align: center;">
+												<span style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 8px 20px; border-radius: 999px; font-size: 14px;">
+													Découvrir le jeu
+												</span>
+											</div>
+										</div>
 									</a>
 								</div>
 							</div>

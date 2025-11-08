@@ -4,7 +4,48 @@
  *
  * @package Hestia
  * @since Hestia 1.0
+ * 
+ * NOTE: Ce projet est un child theme de Hestia
+ * Les hooks WordPress doivent être dans functions.php du thème enfant pour fonctionner correctement
  */
+
+// Supprimer complètement les métadonnées "publié par" et les articles similaires pour le post type "game"
+// IMPORTANT: Ces hooks doivent être dans functions.php du thème pour fonctionner correctement
+// Pour l'instant, on les met ici mais ils devraient être déplacés dans functions.php du thème enfant
+
+// Utiliser template_redirect pour intercepter avant le rendu
+add_action('template_redirect', function() {
+	if (is_singular('game')) {
+		// Supprimer toutes les actions liées aux métadonnées du thème Hestia
+		remove_all_actions('hestia_single_post_meta');
+		remove_all_actions('hestia_blog_post_meta');
+		remove_all_actions('hestia_before_single_post_content');
+		remove_all_actions('hestia_before_single_post_wrapper');
+		remove_all_actions('hestia_after_single_post_title');
+		remove_all_actions('hestia_after_post_title');
+		remove_all_actions('hestia_single_post_content_before');
+		remove_all_actions('hestia_single_post_content_after');
+		
+		// Supprimer la section "Articles similaires"
+		remove_all_actions('hestia_blog_related_posts');
+		remove_all_actions('hestia_related_posts');
+		remove_all_actions('hestia_after_single_post_content');
+		
+		// Utiliser des filtres pour supprimer complètement la sortie des métadonnées
+		add_filter('hestia_single_post_meta', '__return_empty_string', 999);
+		add_filter('hestia_blog_post_meta', '__return_empty_string', 999);
+		add_filter('hestia_posted_on', '__return_empty_string', 999);
+		add_filter('hestia_show_related_posts', '__return_false', 999);
+		
+		// Supprimer aussi les fonctions WordPress génériques
+		add_filter('the_date', '__return_empty_string', 999);
+		add_filter('get_the_date', '__return_empty_string', 999);
+		add_filter('the_author', '__return_empty_string', 999);
+		add_filter('get_the_author', '__return_empty_string', 999);
+		add_filter('the_time', '__return_empty_string', 999);
+		add_filter('get_the_time', '__return_empty_string', 999);
+	}
+}, 1);
 
 get_header();
 
@@ -16,12 +57,116 @@ do_action( 'hestia_before_single_post_wrapper' );
 		<div class="container">
 
 <?php if (have_posts()) : while (have_posts()) : the_post(); 
+	/**
+	 * Fonction helper pour récupérer les données d'un jeu pour l'affichage dans les listes
+	 * Utilise les champs ACF personnalisés avec fallback sur les valeurs par défaut
+	 * @param WP_Post|int $game Le post du jeu ou son ID
+	 * @return array Tableau avec les données du jeu (image, titre, description, payment_url, city_name)
+	 */
+	function get_game_display_data($game) {
+		$game_id = is_object($game) ? $game->ID : $game;
+		
+		// Image : utilise image_liste ACF, sinon thumbnail, sinon image par défaut
+		$image_liste = get_field('image_liste', $game_id);
+		$game_image = '';
+		if ($image_liste) {
+			if (is_array($image_liste) && isset($image_liste['url'])) {
+				$game_image = $image_liste['url'];
+			} elseif (is_string($image_liste)) {
+				$game_image = $image_liste;
+			} elseif (is_numeric($image_liste)) {
+				$game_image = wp_get_attachment_image_url($image_liste, 'medium');
+			}
+		}
+		if (empty($game_image)) {
+			$game_image = get_the_post_thumbnail_url($game_id, 'medium');
+		}
+		if (empty($game_image)) {
+			$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
+		}
+		
+		// Titre : utilise titre_liste ACF, sinon post_title
+		$titre_liste = get_field('titre_liste', $game_id);
+		$game_title = !empty($titre_liste) ? $titre_liste : get_the_title($game_id);
+		
+		// Description : utilise description_liste ACF, sinon excerpt, sinon texte par défaut
+		$description_liste = get_field('description_liste', $game_id);
+		$game_excerpt = !empty($description_liste) ? $description_liste : get_the_excerpt($game_id);
+		if (empty($game_excerpt)) {
+			$game_excerpt = 'Découvrez ce jeu de piste unique dans cette ville.';
+		}
+		
+		// URL de paiement
+		$payment_url = get_field('payment_url', $game_id);
+		if (empty($payment_url)) {
+			$payment_url = get_permalink($game_id);
+		}
+		
+		// Ville
+		$related_city = get_field('city', $game_id);
+		$related_city_name = '';
+		if ($related_city) {
+			if (is_object($related_city) && isset($related_city->post_title)) {
+				$related_city_name = $related_city->post_title;
+			} else {
+				$city_id = extract_acf_relationship_id($related_city);
+				if ($city_id) {
+					$related_city_name = get_the_title($city_id);
+				}
+			}
+		}
+		
+		return array(
+			'image' => $game_image,
+			'title' => $game_title,
+			'excerpt' => $game_excerpt,
+			'payment_url' => $payment_url,
+			'city_name' => $related_city_name
+		);
+	}
+	
+	/**
+	 * Fonction helper pour extraire l'ID d'un champ ACF relationship
+	 * Selon acf.json, les champs relationship ont return_format: "object" et max: 1
+	 * @param mixed $field_value Valeur du champ ACF (peut être objet, tableau ou ID)
+	 * @return int|null ID extrait ou null
+	 */
+	function extract_acf_relationship_id($field_value) {
+		if (!$field_value) {
+			return null;
+		}
+		
+		// Si c'est un objet WP_Post (format attendu selon ACF config)
+		if (is_object($field_value) && isset($field_value->ID)) {
+			return $field_value->ID;
+		}
+		
+		// Si c'est un tableau (fallback pour compatibilité)
+		if (is_array($field_value) && !empty($field_value)) {
+			$first_item = $field_value[0];
+			if (is_object($first_item) && isset($first_item->ID)) {
+				return $first_item->ID;
+			}
+			if (is_numeric($first_item)) {
+				return $first_item;
+			}
+		}
+		
+		// Si c'est directement un ID numérique
+		if (is_numeric($field_value)) {
+			return $field_value;
+		}
+		
+		return null;
+	}
+	
 	// Fonction helper pour récupérer le nom de la ville via la relation city
+	// Selon acf.json : game.city → ville (relationship, return_format: object, max: 1)
 	$city_post = get_field('city');
 	$ville_name = '';
 	$ville_id = null;
 	if ($city_post) {
-		// Si c'est un objet WP_Post
+		// Si c'est un objet WP_Post (format attendu selon ACF config)
 		if (is_object($city_post) && isset($city_post->post_title)) {
 			$ville_name = $city_post->post_title;
 			$ville_id = $city_post->ID;
@@ -31,7 +176,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 			$ville_name = get_the_title($city_post);
 			$ville_id = $city_post;
 		}
-		// Si c'est un tableau (cas improbable mais on gère)
+		// Si c'est un tableau (fallback pour compatibilité)
 		elseif (is_array($city_post) && !empty($city_post)) {
 			$first_city = $city_post[0];
 			if (is_object($first_city) && isset($first_city->post_title)) {
@@ -45,61 +190,236 @@ do_action( 'hestia_before_single_post_wrapper' );
 	}
 	
 	// Fonction helper pour récupérer le nom de la région via la chaîne de relations : ville → département → région
+	// Selon acf.json : ville.ville → departement (relationship, return_format: object, max: 1)
+	// Selon acf.json : departement.region → region (relationship, return_format: object, max: 1)
 	$region_name = '';
+	$departement_id = null;
+	$region_id = null;
 	if ($ville_id) {
-		// Récupérer le département depuis la ville (champ 'ville' sur le post type ville pointe vers departement)
+		// Récupérer le département depuis la ville
 		$departement_post = get_field('ville', $ville_id);
-		$departement_id = null;
+		$departement_id = extract_acf_relationship_id($departement_post);
 		
-		if ($departement_post) {
-			// Si c'est un objet WP_Post
-			if (is_object($departement_post) && isset($departement_post->ID)) {
-				$departement_id = $departement_post->ID;
-			}
-			// Si c'est un ID
-			elseif (is_numeric($departement_post)) {
-				$departement_id = $departement_post;
-			}
-			// Si c'est un tableau (multiple: true)
-			elseif (is_array($departement_post) && !empty($departement_post)) {
-				$first_departement = $departement_post[0];
-				if (is_object($first_departement) && isset($first_departement->ID)) {
-					$departement_id = $first_departement->ID;
-				} elseif (is_numeric($first_departement)) {
-					$departement_id = $first_departement;
-				}
-			}
-		}
-		
-		// Récupérer la région depuis le département (champ 'region' sur le post type departement pointe vers region)
+		// Récupérer la région depuis le département
 		if ($departement_id) {
 			$region_post = get_field('region', $departement_id);
+			$region_id = extract_acf_relationship_id($region_post);
 			
-			if ($region_post) {
-				// Si c'est un objet WP_Post
-				if (is_object($region_post) && isset($region_post->post_title)) {
-					$region_name = $region_post->post_title;
-				}
-				// Si c'est un ID
-				elseif (is_numeric($region_post)) {
-					$region_name = get_the_title($region_post);
-				}
-				// Si c'est un tableau (multiple: true)
-				elseif (is_array($region_post) && !empty($region_post)) {
-					$first_region = $region_post[0];
-					if (is_object($first_region) && isset($first_region->post_title)) {
-						$region_name = $first_region->post_title;
-					} elseif (is_numeric($first_region)) {
-						$region_name = get_the_title($first_region);
-					}
+			if ($region_id) {
+				$region_obj = get_post($region_id);
+				if ($region_obj) {
+					$region_name = $region_obj->post_title;
 				}
 			}
 		}
 	}
+	
+	/**
+	 * Fonction helper pour récupérer les jeux pertinents selon la hiérarchie : ville → département → région
+	 * Basé sur la configuration ACF (acf.json)
+	 * @param int $current_game_id ID du jeu actuel à exclure
+	 * @param int $ville_id ID de la ville
+	 * @param int $departement_id ID du département
+	 * @param int $region_id ID de la région
+	 * @param int $limit Nombre maximum de jeux à retourner (défaut: 6)
+	 * @return array Tableau de jeux WP_Post
+	 */
+	function get_related_games($current_game_id, $ville_id, $departement_id, $region_id, $limit = 6) {
+		$related_games = array();
+		$excluded_ids = array($current_game_id);
+		
+		// 1. Récupérer les jeux de la même ville
+		// Selon acf.json : game.city → ville (relationship, return_format: object, max: 1)
+		if ($ville_id) {
+			$all_games = get_posts(array(
+				'post_type' => 'game',
+				'posts_per_page' => -1,
+				'post__not_in' => $excluded_ids,
+				'suppress_filters' => false
+			));
+			
+			foreach ($all_games as $game) {
+				$city_field = get_field('city', $game->ID);
+				$city_id = extract_acf_relationship_id($city_field);
+				
+				if ($city_id == $ville_id) {
+					$related_games[] = $game;
+					$excluded_ids[] = $game->ID;
+					if (count($related_games) >= $limit) {
+						return $related_games;
+					}
+				}
+			}
+		}
+		
+		// 2. Si pas assez, récupérer les jeux du même département
+		// Selon acf.json : ville.ville → departement (relationship, return_format: object, max: 1)
+		if (count($related_games) < $limit && $departement_id) {
+			// Récupérer toutes les villes du département
+			$villes_departement = get_posts(array(
+				'post_type' => 'ville',
+				'posts_per_page' => -1,
+				'suppress_filters' => false
+			));
+			
+			$villes_ids_departement = array();
+			foreach ($villes_departement as $ville) {
+				$ville_departement_field = get_field('ville', $ville->ID);
+				$dep_id = extract_acf_relationship_id($ville_departement_field);
+				
+				if ($dep_id == $departement_id) {
+					$villes_ids_departement[] = $ville->ID;
+				}
+			}
+			
+			// Récupérer les jeux de ces villes
+			if (!empty($villes_ids_departement)) {
+				$all_games = get_posts(array(
+					'post_type' => 'game',
+					'posts_per_page' => -1,
+					'post__not_in' => $excluded_ids,
+					'suppress_filters' => false
+				));
+				
+				foreach ($all_games as $game) {
+					$city_field = get_field('city', $game->ID);
+					$city_id = extract_acf_relationship_id($city_field);
+					
+					if ($city_id && in_array($city_id, $villes_ids_departement)) {
+						$related_games[] = $game;
+						$excluded_ids[] = $game->ID;
+						if (count($related_games) >= $limit) {
+							return $related_games;
+						}
+					}
+				}
+			}
+		}
+		
+		// 3. Si pas assez, récupérer les jeux de la même région
+		// Selon acf.json : departement.region → region (relationship, return_format: object, max: 1)
+		if (count($related_games) < $limit && $region_id) {
+			// Récupérer tous les départements de la région
+			$departements_region = get_posts(array(
+				'post_type' => 'departement',
+				'posts_per_page' => -1,
+				'suppress_filters' => false
+			));
+			
+			$departements_ids_region = array();
+			foreach ($departements_region as $departement) {
+				$region_field = get_field('region', $departement->ID);
+				$reg_id = extract_acf_relationship_id($region_field);
+				
+				if ($reg_id == $region_id) {
+					$departements_ids_region[] = $departement->ID;
+				}
+			}
+			
+			// Récupérer toutes les villes de ces départements
+			$villes_ids_region = array();
+			if (!empty($departements_ids_region)) {
+				$all_villes = get_posts(array(
+					'post_type' => 'ville',
+					'posts_per_page' => -1,
+					'suppress_filters' => false
+				));
+				
+				foreach ($all_villes as $ville) {
+					$ville_departement_field = get_field('ville', $ville->ID);
+					$dep_id = extract_acf_relationship_id($ville_departement_field);
+					
+					if ($dep_id && in_array($dep_id, $departements_ids_region)) {
+						$villes_ids_region[] = $ville->ID;
+					}
+				}
+			}
+			
+			// Récupérer les jeux de ces villes
+			if (!empty($villes_ids_region)) {
+				$all_games = get_posts(array(
+					'post_type' => 'game',
+					'posts_per_page' => -1,
+					'post__not_in' => $excluded_ids,
+					'suppress_filters' => false
+				));
+				
+				foreach ($all_games as $game) {
+					$city_field = get_field('city', $game->ID);
+					$city_id = extract_acf_relationship_id($city_field);
+					
+					if ($city_id && in_array($city_id, $villes_ids_region)) {
+						$related_games[] = $game;
+						$excluded_ids[] = $game->ID;
+						if (count($related_games) >= $limit) {
+							return $related_games;
+						}
+					}
+				}
+			}
+		}
+		
+		return $related_games;
+	}
+	
+	// Récupérer les jeux pertinents
+	$related_games = get_related_games(get_the_ID(), $ville_id, $departement_id, $region_id, 6);
+	
+	// Récupérer les champs configurables avec valeurs par défaut
+	$prix_original = get_field('prix_original');
+	// Si pas de prix original défini, ne pas afficher de prix barré
+	$afficher_prix_original = !empty($prix_original);
+	
+	$prix = get_field('prix');
+	if (empty($prix)) {
+		$prix = '39€';
+	}
+	
+	$texte_offre = get_field('texte_offre');
+	if (empty($texte_offre)) {
+		$texte_offre = 'Offre du moment !';
+	}
+	
+	$titre_offre = get_field('titre_offre');
+	if (empty($titre_offre)) {
+		$titre_offre = 'Offre du moment !';
+	}
+	
+	$nombre_joueurs = get_field('nombre_joueurs');
+	if (empty($nombre_joueurs)) {
+		$nombre_joueurs = '2 – 5 joueurs';
+	}
+	
+	$age_minimum = get_field('age_minimum');
+	if (empty($age_minimum)) {
+		$age_minimum = 'à partir de 8 ans';
+	}
+	
+	$duree = get_field('duree');
+	if (empty($duree)) {
+		$duree = '60 minutes';
+	}
+	
+	// Récupérer l'image de la carte d'offre avec fallback
+	$image_carte_offre = get_field('image_carte_offre');
+	$image_carte_offre_url = '';
+	if ($image_carte_offre) {
+		if (is_array($image_carte_offre) && isset($image_carte_offre['url'])) {
+			$image_carte_offre_url = $image_carte_offre['url'];
+		} elseif (is_string($image_carte_offre)) {
+			$image_carte_offre_url = $image_carte_offre;
+		} elseif (is_numeric($image_carte_offre)) {
+			$image_carte_offre_url = wp_get_attachment_image_url($image_carte_offre, 'full');
+		}
+	}
+	// Si pas d'image ACF, utiliser l'image par défaut
+	if (empty($image_carte_offre_url)) {
+		$image_carte_offre_url = 'http://urbanquest.fr/wp-content/uploads/2025/10/Group-10.png';
+	}
 ?>
 		<article id="post-<?php the_ID(); ?>" <?php post_class('single-game-content'); ?>>
 			<div class="row">
-				<div class="col-md-8 page-content-wrap  col-md-offset-2">
+				<div class="">
 
 					<h2></h2>
 					<div style="display: flex; flex-wrap: wrap; gap: 0;">
@@ -120,19 +440,36 @@ do_action( 'hestia_before_single_post_wrapper' );
 
 						<div style="flex: 0 0 50%; max-width: 50%; box-sizing: border-box;">
 							<section style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 48px; padding: 24px 22px; max-width: 540px; margin: 0;">
-								<img src="http://urbanquest.fr/wp-content/uploads/2025/10/Group-10.png" alt="" width="486" height="316" class="aligncenter wp-image-26994 size-full" />
+								<!-- Image de fond bleue avec logo (image complète) -->
+								<div style="position: relative; width: 100%; height: 316px; border-radius: 12px; overflow: visible; margin-bottom: 0; background-image: url('<?php echo esc_url($image_carte_offre_url); ?>'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+									<!-- Badge de prix qui chevauche l'image en bas -->
+									<div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 3;">
+										<div style="display: inline-flex; align-items: baseline; gap: 12px; background: #FFD700; padding: 14px 32px; border-radius: 30px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+											<?php if ($afficher_prix_original) : ?>
+												<span style="color: #1f2a37; font-size: 20px; text-decoration: line-through; font-weight: 500; opacity: 0.7;"><?php echo esc_html($prix_original); ?></span>
+											<?php endif; ?>
+											<span style="color: #1f2a37; font-size: 36px; font-weight: bold; line-height: 1;"><?php echo esc_html($prix); ?></span>
+										</div>
+									</div>
+								</div>
+								
+								<!-- Titre "Offre du moment !" sous le badge -->
+								<div style="text-align: center; margin-top: 35px; margin-bottom: 18px;">
+									<span style="color: #1f2a37; font-size: 20px; font-weight: bold;"><?php echo esc_html($titre_offre); ?></span>
+								</div>
+								
 								<img src="http://urbanquest.fr/wp-content/uploads/2025/10/made-in-france-1.png" alt="" width="234" height="19" class="wp-image-26996 size-full aligncenter" />
 								<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 									<li style="list-style-type: none;">
 										<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto; padding-top: 16px;"><i style="width: 28px; height: 28px; display: inline-block;" data-lucide="users"></i>
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">2 – 5 joueurs</div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">à partir de 8 ans</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($nombre_joueurs); ?></div>
+													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;"><?php echo esc_html($age_minimum); ?></div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto;"><i style="width: 28px; height: 28px; display: inline-block;" data-lucide="clock"></i>
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">60 minutes</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($duree); ?></div>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">pour enchaîner les défis</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto;"><i style="width: 28px; height: 28px; display: inline-block;" data-lucide="smartphone"></i>
@@ -259,11 +596,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 							</tr>
 							<tr>
 								<td style="border: 1px solid #eee; padding: 10px;"><strong>Durée</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;">60 minutes</td>
+								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($duree); ?></td>
 							</tr>
 							<tr>
 								<td style="border: 1px solid #eee; padding: 10px;"><strong>Équipe</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;">2 à 5 joueurs</td>
+								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($nombre_joueurs); ?></td>
 							</tr>
 							<tr>
 								<td style="border: 1px solid #eee; padding: 10px;"><strong>Matériel</strong></td>
@@ -271,12 +608,47 @@ do_action( 'hestia_before_single_post_wrapper' );
 							</tr>
 							<tr>
 								<td style="border: 1px solid #eee; padding: 10px;"><strong>Tarif</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;"><strong>39 € par équipe</strong></td>
+								<td style="border: 1px solid #eee; padding: 10px;"><strong><?php echo esc_html($prix); ?> par équipe</strong></td>
 							</tr>
 						</tbody>
 					</table>
 					<?php echo do_shortcode('[xyz-ihs snippet="replace-buy-button"]'); ?>
 
+					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+					
+					<!-- ===================== JEUX QUI PEUVENT VOUS INTÉRESSER ===================== -->
+					<?php if (!empty($related_games)) : ?>
+						<h2 style="text-align: center; margin-bottom: 40px;">Jeux qui peuvent vous intéresser</h2>
+						<div class="row" style="margin-bottom: 60px;">
+							<?php foreach ($related_games as $related_game) : 
+								$game_data = get_game_display_data($related_game);
+							?>
+							<div class="col-md-4" style="margin-bottom: 30px;">
+								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+									<a href="<?php echo esc_url(get_permalink($related_game->ID)); ?>" style="text-decoration: none; color: inherit; display: block;">
+										<img src="<?php echo esc_url($game_data['image']); ?>" alt="<?php echo esc_attr($game_data['title']); ?>" style="width: 100%; height: 200px; object-fit: cover;" />
+										<div style="padding: 20px;">
+											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37;"><?php echo esc_html($game_data['title']); ?></h3>
+											<?php if ($game_data['city_name']) : ?>
+												<p style="margin: 0 0 10px; color: #6b7280; font-size: 14px; font-weight: 500;">
+													<i style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" data-lucide="map-pin"></i>
+													<?php echo esc_html($game_data['city_name']); ?>
+												</p>
+											<?php endif; ?>
+											<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5;"><?php echo esc_html(wp_trim_words($game_data['excerpt'], 20)); ?></p>
+											<div style="text-align: center;">
+												<span style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 8px 20px; border-radius: 999px; font-size: 14px;">
+													Découvrir le jeu
+												</span>
+											</div>
+										</div>
+									</a>
+								</div>
+							</div>
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+					
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
 					<!-- ===================== FAQ (avec riche contenu & FAQ Schema) ===================== -->
@@ -301,7 +673,10 @@ do_action( 'hestia_before_single_post_wrapper' );
 
 <?php
 if ( ! is_singular( 'elementor_library' ) ) {
-	do_action( 'hestia_blog_related_posts' );
+	// Ne pas afficher les articles similaires pour le post type "game"
+	if ( ! is_singular( 'game' ) ) {
+		do_action( 'hestia_blog_related_posts' );
+	}
 }
 ?>
 <div class="footer-wrapper">
