@@ -344,6 +344,194 @@
         "max_size": "",
         "mime_types": "",
         "preview_size": "medium"
+      },
+      {
+        "key": "field_game_titre_principal",
+        "label": "Titre principal",
+        "name": "titre_principal",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre principal affiché en haut de la page (ex: 'Jouez quand vous voulez à Bordeaux'). Si vide, utilise 'Jouez quand vous voulez à [ville]' par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "maxlength": "",
+        "placeholder": "Jouez quand vous voulez à [ville]",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_game_description_principale",
+        "label": "Description principale",
+        "name": "description_principale",
+        "aria-label": "",
+        "type": "wysiwyg",
+        "instructions": "Description principale du jeu affichée en haut de la page. Utilisez l'éditeur WYSIWYG pour formater le texte.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "tabs": "all",
+        "toolbar": "full",
+        "media_upload": 1,
+        "delay": 0
+      },
+      {
+        "key": "field_game_titre_section_infos",
+        "label": "Titre de la section infos",
+        "name": "titre_section_infos",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre de la section '+ d'infos sur le jeu' (ex: 'Depuis Jeu'). Si vide, utilise '+ d'infos sur le jeu' par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "+ d'infos sur le jeu",
+        "maxlength": "",
+        "placeholder": "+ d'infos sur le jeu",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_game_tranche_age",
+        "label": "Tranche d'âge",
+        "name": "tranche_age",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Tranche d'âge affichée dans la section infos (ex: 'De 7 à 77 ans'). Si vide, utilise 'De 7 à 77 ans' par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "De 7 à 77 ans",
+        "maxlength": "",
+        "placeholder": "De 7 à 77 ans",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_game_distance",
+        "label": "Distance",
+        "name": "distance",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Distance du parcours affichée dans la section infos (ex: 'Env. 3,4km'). Si vide, utilise 'Env. 3,4km' par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "Env. 3,4km",
+        "maxlength": "",
+        "placeholder": "Env. 3,4km",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_game_jauge_fun",
+        "label": "Jauge Fun",
+        "name": "jauge_fun",
+        "aria-label": "",
+        "type": "number",
+        "instructions": "Niveau de la jauge Fun (de 1 à 100). Si vide, utilise 33 par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": 33,
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "placeholder": "",
+        "prepend": "",
+        "append": "%"
+      },
+      {
+        "key": "field_game_jauge_histoire",
+        "label": "Jauge Histoire",
+        "name": "jauge_histoire",
+        "aria-label": "",
+        "type": "number",
+        "instructions": "Niveau de la jauge Histoire (de 1 à 100). Si vide, utilise 66 par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": 66,
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "placeholder": "",
+        "prepend": "",
+        "append": "%"
+      },
+      {
+        "key": "field_game_jauge_reflexion",
+        "label": "Jauge Réflexion",
+        "name": "jauge_reflexion",
+        "aria-label": "",
+        "type": "number",
+        "instructions": "Niveau de la jauge Réflexion (de 1 à 100). Si vide, utilise 75 par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": 75,
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "placeholder": "",
+        "prepend": "",
+        "append": "%"
+      },
+      {
+        "key": "field_game_jauge_culture_locale",
+        "label": "Jauge Culture locale",
+        "name": "jauge_culture_locale",
+        "aria-label": "",
+        "type": "number",
+        "instructions": "Niveau de la jauge Culture locale (de 1 à 100). Si vide, utilise 66 par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": 66,
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "placeholder": "",
+        "prepend": "",
+        "append": "%"
       }
     ],
     "location": [

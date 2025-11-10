@@ -7,7 +7,22 @@
  */
 
 get_header();
+?>
 
+<!-- Breadcrumb Navigation -->
+<?php 
+// Afficher le breadcrumb juste après le header
+if (function_exists('urbanquest_display_breadcrumb')) {
+	urbanquest_display_breadcrumb();
+} else {
+	// Debug: afficher un message si la fonction n'existe pas
+	if (current_user_can('administrator')) {
+		echo '<!-- ERREUR: La fonction urbanquest_display_breadcrumb n\'existe pas -->';
+	}
+}
+?>
+
+<?php
 do_action( 'hestia_before_single_post_wrapper' );
 ?>
 
@@ -323,6 +338,14 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<div class="row" style="margin-bottom: 60px;">
 						<div class="col-md-8">
 							<h2>Le Berceau d'Urban Quest</h2>
+							
+							<!-- Breadcrumb Navigation -->
+							<?php 
+							if (function_exists('urbanquest_display_breadcrumb_simple')) {
+								urbanquest_display_breadcrumb_simple();
+							}
+							?>
+							
 							<div class="region-description">
 								<?php echo wpautop($region_description); ?>
 							</div>
@@ -359,8 +382,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 											<img src="<?php echo esc_url($game_image); ?>" alt="<?php echo esc_attr($game_title); ?>" style="width: 100%; max-width: 562px; height: auto; border-radius: 8px; margin-bottom: 15px;" />
 											<h3 style="margin: 10px 0;"><?php echo esc_html($game_title); ?></h3>
 											<p style="margin-bottom: 20px;"><?php echo esc_html($game_excerpt); ?></p>
-											<a href="<?php echo esc_url($payment_url); ?>" class="btn btn-primary" style="display: inline-block; padding: 10px 25px; background: #e91e63; color: white; text-decoration: none; border-radius: 3px;">
-												<i class="far fa-calendar-alt" style="margin-right: 5px;"></i> Réserver
+											<?php 
+											$button_text = (empty($payment_url) || $payment_url === '#') ? 'Bientôt' : 'Réserver';
+											$button_href = (empty($payment_url) || $payment_url === '#') ? '#' : $payment_url;
+											?>
+											<a href="<?php echo esc_url($button_href); ?>" <?php echo ($button_href !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text); ?>
 											</a>
 										</div>
 									</div>
@@ -412,8 +438,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 									<img src="<?php echo esc_url($game_image); ?>" alt="<?php echo esc_attr($game_title); ?>" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px;" />
 									<h3 style="font-size: 20px; margin: 10px 0;"><?php echo esc_html($game_title); ?></h3>
 									<p style="font-size: 14px; margin-bottom: 20px;"><?php echo esc_html($game_excerpt); ?></p>
-									<a href="<?php echo esc_url($payment_url); ?>" class="btn btn-primary" style="display: inline-block; padding: 8px 20px; background: #e91e63; color: white; text-decoration: none; border-radius: 3px; font-size: 14px;">
-										<i class="far fa-calendar-alt" style="margin-right: 5px;"></i> Réserver
+									<?php 
+									$button_text = (empty($payment_url) || $payment_url === '#') ? 'Bientôt' : 'Réserver';
+									$button_href = (empty($payment_url) || $payment_url === '#') ? '#' : $payment_url;
+									?>
+									<a href="<?php echo esc_url($button_href); ?>" <?php echo ($button_href !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text); ?>
 									</a>
 								</div>
 							</div>
@@ -452,8 +481,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 									<img src="<?php echo esc_url($game_image); ?>" alt="<?php echo esc_attr($game_title); ?>" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px;" />
 									<h3 style="font-size: 20px; margin: 10px 0;"><?php echo esc_html($game_title); ?></h3>
 									<p style="font-size: 14px; margin-bottom: 20px;"><?php echo esc_html($game_excerpt); ?></p>
-									<a href="<?php echo esc_url($payment_url); ?>" class="btn btn-primary" style="display: inline-block; padding: 8px 20px; background: #e91e63; color: white; text-decoration: none; border-radius: 3px; font-size: 14px;">
-										<i class="far fa-calendar-alt" style="margin-right: 5px;"></i> Réserver
+									<?php 
+									$button_text = (empty($payment_url) || $payment_url === '#') ? 'Bientôt' : 'Réserver';
+									$button_href = (empty($payment_url) || $payment_url === '#') ? '#' : $payment_url;
+									?>
+									<a href="<?php echo esc_url($button_href); ?>" <?php echo ($button_href !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text); ?>
 									</a>
 								</div>
 							</div>

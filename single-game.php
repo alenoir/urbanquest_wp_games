@@ -416,19 +416,101 @@ do_action( 'hestia_before_single_post_wrapper' );
 	if (empty($image_carte_offre_url)) {
 		$image_carte_offre_url = 'http://urbanquest.fr/wp-content/uploads/2025/10/Group-10.png';
 	}
+	
+	// Récupérer le titre principal
+	$titre_principal = get_field('titre_principal');
+	if (empty($titre_principal)) {
+		$titre_principal = 'Jouez quand vous voulez à ' . $ville_name;
+	} else {
+		// Remplacer [ville] par le nom de la ville si présent dans le titre
+		$titre_principal = str_replace('[ville]', $ville_name, $titre_principal);
+	}
+	
+	// Récupérer la description principale (WYSIWYG)
+	$description_principale = get_field('description_principale');
+	
+	// Récupérer les champs pour la section infos
+	$titre_section_infos = get_field('titre_section_infos');
+	if (empty($titre_section_infos)) {
+		$titre_section_infos = "+ d'infos sur le jeu";
+	}
+	
+	$tranche_age = get_field('tranche_age');
+	if (empty($tranche_age)) {
+		$tranche_age = "De 7 à 77 ans";
+	}
+	
+	$distance = get_field('distance');
+	if (empty($distance)) {
+		$distance = "Env. 3,4km";
+	}
+	
+	// Récupérer les niveaux des jauges (valeurs de 1 à 100)
+	$jauge_fun = get_field('jauge_fun');
+	if (empty($jauge_fun)) {
+		$jauge_fun = 33;
+	}
+	$jauge_fun = max(1, min(100, intval($jauge_fun))); // S'assurer que c'est entre 1 et 100
+	
+	$jauge_histoire = get_field('jauge_histoire');
+	if (empty($jauge_histoire)) {
+		$jauge_histoire = 66;
+	}
+	$jauge_histoire = max(1, min(100, intval($jauge_histoire)));
+	
+	$jauge_reflexion = get_field('jauge_reflexion');
+	if (empty($jauge_reflexion)) {
+		$jauge_reflexion = 75;
+	}
+	$jauge_reflexion = max(1, min(100, intval($jauge_reflexion)));
+	
+	$jauge_culture_locale = get_field('jauge_culture_locale');
+	if (empty($jauge_culture_locale)) {
+		$jauge_culture_locale = 66;
+	}
+	$jauge_culture_locale = max(1, min(100, intval($jauge_culture_locale)));
+	
+	// Fonction helper pour générer le HTML de la jauge avec le rendu fidèle
+	function render_jauge($valeur, $label) {
+		$valeur = max(1, min(100, intval($valeur)));
+		$pourcentage = $valeur . '%';
+		
+		ob_start();
+		?>
+		<div style="position: relative; width: 100%; height: 16px;">
+			<!-- Barre de progression principale -->
+			<div style="position: relative; width: 100%; height: 100%; border-radius: 10px; overflow: visible; background: white; ">
+				<!-- Partie bleue remplie (bleu ciel clair #87CEEB) -->
+				<div style="position: absolute; top: 0; left: 0; width: <?php echo esc_attr($pourcentage); ?>; height: 100%; background: #87CEEB; border-radius: 10px; z-index: 1;"></div>
+				<!-- Partie blanche non remplie -->
+				<div style="position: absolute; top: 0; left: <?php echo esc_attr($pourcentage); ?>; width: <?php echo esc_attr((100 - $valeur) . '%'); ?>; height: 100%; background: white; border-radius: <?php echo ($valeur <= 0) ? '10px' : '0 10px 10px 0'; ?>; z-index: 1;"></div>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
 ?>
 		<article id="post-<?php the_ID(); ?>" <?php post_class('single-game-content'); ?>>
 			<div class="row">
 				<div class="">
-
-					<h2></h2>
+<!-- Breadcrumb Navigation -->
+<?php 
+							if (function_exists('urbanquest_display_breadcrumb_simple')) {
+								urbanquest_display_breadcrumb_simple();
+							}
+							?>
 					<div style="display: flex; flex-wrap: wrap; gap: 0;">
 						<div style="flex: 0 0 50%; max-width: 50%; padding: 0 30px 0 0; box-sizing: border-box;">
-							<h2>Jouez quand vous voulez à <?php echo esc_html($ville_name); ?></h2>
-							<p>Urban Quest, c'est <strong>le jeu de piste nouvelle génération</strong> à <?php echo esc_html($ville_name); ?> : pas besoin de réserver un créneau, tout se joue en totale autonomie.
-							Après achat, vous recevez vos <strong>instructions de jeu</strong> par e-mail. Il vous suffit de vous rendre au point de départ indiqué, de sortir <strong>votre smartphone</strong>… et de lancer l'aventure.</p>
-
-							<p>Plus qu'un simple jeu, c'est une véritable expérience immersive qui mêle jeu de piste, exploration et esprit d'équipe.</p>
+							<h2><?php echo esc_html($titre_principal); ?></h2>
+							
+							
+							
+							<?php 
+							// Afficher la description principale (WYSIWYG)
+							if (!empty($description_principale)) {
+								echo '<div class="description-principale">' . wp_kses_post($description_principale) . '</div>';
+							}
+							?>
 
 							<img src="http://urbanquest.fr/wp-content/uploads/2025/10/notation-urbanquest-1024x219.png" alt="" width="750" height="160" class="aligncenter size-large wp-image-26992" />
 							<h5>En groupe ?</h5>
@@ -441,10 +523,10 @@ do_action( 'hestia_before_single_post_wrapper' );
 						<div style="flex: 0 0 50%; max-width: 50%; box-sizing: border-box;">
 							<section style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 48px; padding: 24px 22px; max-width: 540px; margin: 0;">
 								<!-- Image de fond bleue avec logo (image complète) -->
-								<div style="position: relative; width: 100%; height: 316px; border-radius: 12px; overflow: visible; margin-bottom: 0; background-image: url('<?php echo esc_url($image_carte_offre_url); ?>'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+								<div style="position: relative; width: 100%; height: 250px; border-radius: 24px; overflow: visible; margin-bottom: 0; background-image: url('<?php echo esc_url($image_carte_offre_url); ?>'); background-size: cover; background-position: center; background-repeat: no-repeat;">
 									<!-- Badge de prix qui chevauche l'image en bas -->
 									<div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 3;">
-										<div style="display: inline-flex; align-items: baseline; gap: 12px; background: #FFD700; padding: 14px 32px; border-radius: 30px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+										<div style="display: inline-flex; align-items: center; gap: 12px; background: #F5EA4D; padding: 14px 32px; border-radius: 999px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
 											<?php if ($afficher_prix_original) : ?>
 												<span style="color: #1f2a37; font-size: 20px; text-decoration: line-through; font-weight: 500; opacity: 0.7;"><?php echo esc_html($prix_original); ?></span>
 											<?php endif; ?>
@@ -497,7 +579,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- ===================== SECTION VALEUR / POURQUOI NOUS ===================== -->
 					<h2 style="text-align: center;">Pourquoi choisir Urban Quest à <?php echo esc_html($ville_name); ?> ?</h2>
 					<img src="http://urbanquest.fr/wp-content/uploads/2025/10/compo-photo-nice.png" alt="" width="561" height="101" class="center aligncenter wp-image-27010 size-full" />
-					<p style="text-align: center; max-width: 860px; margin: 0 auto;">Un savant mélange <strong>jeu de piste</strong>, <strong>chasse au trésor</strong> et <strong>visite insolite</strong> : observation, logique, audace et stratégie vous feront grimper au classement, tout en (re)découvrant <?php echo esc_html($ville_name); ?> et ses lieux emblématiques.</p>
+					<p style="text-align: center; max-width: 860px; margin: 0 auto;">Un savant mélange jeu de piste, chasse au trésor et visite insolite : observation, logique, audace et stratégie vous feront grimper au classement, tout en (re)découvrant <?php echo esc_html($ville_name); ?> et ses lieux emblématiques.</p>
 
 					<div style="display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin-top: 14px;">
 						<div style="flex: 1 1 260px; min-width: 240px; background: #fafafa; padding: 16px; border-radius: 12px;"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="calendar-heart"></i>
@@ -510,7 +592,15 @@ do_action( 'hestia_before_single_post_wrapper' );
 							<strong>Fun &amp; challenge</strong>
 							Défis variés, énigmes malignes, score et classement.</div>
 					</div>
-					<div style="text-align: center; margin: 18px 0 6px;"><?php echo do_shortcode('[xyz-ihs snippet="replace-buy-button"]'); ?></div>
+					<div style="text-align: center; margin: 18px 0 6px;">
+						<?php 
+						$payment_url_button = get_field('payment_url');
+						$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
+						$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
+						?>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
+						</a>
+					</div>
 					<div></div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -518,32 +608,32 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<div style="display: flex; flex-wrap: wrap; gap: 0;">
 						<div style="flex: 0 0 33.333%; max-width: 33.333%; padding: 0 60px 0 0; box-sizing: border-box;">
 							<section style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 48px; padding: 32px 22px 0px 22px; max-width: 540px; margin: 0;">
-								<h5 style="text-align: left;">+ d'infos sur le jeu</h5>
+								<h5 style="text-align: left;"><?php echo esc_html($titre_section_infos); ?></h5>
 								<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 									<li style="list-style-type: none;">
 										<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto; padding-top: 16px;">
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">De 7 à 77 ans</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($tranche_age); ?></div>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Tant que marcher 60 min n'est pas un challenger pour vous</div>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Nous avons aussi des jeux conçus spécialement pour les kids</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto;">
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">Env. 3,4km</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($distance); ?></div>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Pensez à prendre vos baskets!</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 0px solid #E6ECF4; width: 90%; margin: 0 auto;">
 												<div style="line-height: 1.25;">
 													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">Typologie de jeu</div>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Fun</div>
-													<img src="http://urbanquest.fr/wp-content/uploads/2025/10/jauge-taille-1.png" alt="" width="100%" height="53" style="margin: -8px 0 -10px 0;" />
+													<?php echo render_jauge($jauge_fun, 'Fun'); ?>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Histoire</div>
-													<img src="http://urbanquest.fr/wp-content/uploads/2025/10/jauge-taille-2.png" alt="" width="100%" height="53" style="margin: -8px 0 -10px 0;" />
+													<?php echo render_jauge($jauge_histoire, 'Histoire'); ?>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Réflexion</div>
-													<img src="http://urbanquest.fr/wp-content/uploads/2025/10/jauge-taille-3.png" alt="" width="100%" height="53" style="margin: -8px 0 -10px 0;" />
+													<?php echo render_jauge($jauge_reflexion, 'Réflexion'); ?>
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Culture locale</div>
-													<img src="http://urbanquest.fr/wp-content/uploads/2025/10/jauge-taille-2.png" alt="" width="100%" height="53" style="margin: -8px 0 -10px 0;" />
+													<?php echo render_jauge($jauge_culture_locale, 'Culture locale'); ?>
 
 												</div></li>
 										</ul>
@@ -557,15 +647,15 @@ do_action( 'hestia_before_single_post_wrapper' );
 							<div><img src="http://urbanquest.fr/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png" alt="" width="750" height="139" class="aligncenter size-large wp-image-26967" /></div>
 							<p style="margin: 10px 0;">Avec Urban Quest, oubliez les visites classiques : chaque rue peut cacher un indice, chaque monument peut être la clé d'une énigme.
 							Entre rires, stratégie et adrénaline, vous vivez une expérience intense où l'observation et l'esprit d'équipe font toute la différence.</p>
-							<p style="margin: 10px 0;">Pendant <strong>60 minutes</strong>, la ville s'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l'énergie du jeu.</p>
-							<p style="margin: 10px 0;">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à <strong>découvrir la ville autrement</strong> et à créer des souvenirs mémorables ✨</p>
+							<p style="margin: 10px 0;">Pendant 60 minutes, la ville s'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l'énergie du jeu.</p>
+							<p style="margin: 10px 0;">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à découvrir la ville autrement et à créer des souvenirs mémorables ✨</p>
 
 
 							<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
 							<h3 style="margin: 0 0 10px; text-align: center;">Un jeu de piste unique à <?php echo esc_html($ville_name); ?></h3>
-							<p style="margin: 10px 0;">Si vous cherchez une <strong>activité insolite à <?php echo esc_html($ville_name); ?></strong>, Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de <?php echo esc_html($ville_name); ?>.
-							Idéal pour ceux qui veulent <strong>découvrir <?php echo esc_html($ville_name); ?> autrement</strong> en mêlant culture, divertissement et esprit de compétition.</p>
+							<p style="margin: 10px 0;">Si vous cherchez une activité insolite à <?php echo esc_html($ville_name); ?>, Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de <?php echo esc_html($ville_name); ?>.
+							Idéal pour ceux qui veulent découvrir autrement <?php echo esc_html($ville_name); ?> en mêlant culture, divertissement et esprit de compétition.</p>
 							<p style="margin: 10px 0;">🔎 <em>Fun fact :</em> avec Urban Quest, c'est à votre tour d'apporter couleurs et énergie à <?php echo esc_html($ville_name); ?> en résolvant ses énigmes !</p>
 						</div>
 					</div>
@@ -577,45 +667,19 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<p style="text-align: center;"><img src="http://urbanquest.fr/wp-content/uploads/2025/08/newUQderoulement-2.png" alt="" width="760" height="231" class="aligncenter size-full wp-image-26861" /></p>
 					<p class="p1" style="text-align: center;">Choisis ton parcours, pars à l'aventure dans la ville et mesure-toi aux autres équipes.</p>
 					<p class="p1" style="text-align: center;">Une expérience fun, rapide à lancer et 100 % autonome !</p>
-					<p style="text-align: center;"><?php echo do_shortcode('[xyz-ihs snippet="replace-buy-button"]'); ?></p>
+					<p style="text-align: center;">
+						<?php 
+						$payment_url_button = get_field('payment_url');
+						$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
+						$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
+						?>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
+						</a>
+					</p>
 
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
-					<!-- ===================== TABLE INFO CLÉ (SEO + Conversion) ===================== -->
-					<h2>Informations clés</h2>
-					<table style="width: 100%; border-collapse: collapse;">
-						<tbody>
-							<tr>
-								<td style="border: 1px solid #eee; padding: 10px; width: 35%;"><strong>Lieu</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($ville_name); ?>, <?php echo esc_html($region_name); ?></td>
-							</tr>
-							<tr>
-								<td style="border: 1px solid #eee; padding: 10px;"><strong>Point de départ</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html(get_field('point_de_depart')); ?> (précisé dans les instructions de jeu)</td>
-							</tr>
-							<tr>
-								<td style="border: 1px solid #eee; padding: 10px;"><strong>Durée</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($duree); ?></td>
-							</tr>
-							<tr>
-								<td style="border: 1px solid #eee; padding: 10px;"><strong>Équipe</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($nombre_joueurs); ?></td>
-							</tr>
-							<tr>
-								<td style="border: 1px solid #eee; padding: 10px;"><strong>Matériel</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;">Votre smartphone + connexion data</td>
-							</tr>
-							<tr>
-								<td style="border: 1px solid #eee; padding: 10px;"><strong>Tarif</strong></td>
-								<td style="border: 1px solid #eee; padding: 10px;"><strong><?php echo esc_html($prix); ?> par équipe</strong></td>
-							</tr>
-						</tbody>
-					</table>
-					<?php echo do_shortcode('[xyz-ihs snippet="replace-buy-button"]'); ?>
-
-					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
-					
 					<!-- ===================== JEUX QUI PEUVENT VOUS INTÉRESSER ===================== -->
 					<?php if (!empty($related_games)) : ?>
 						<h2 style="text-align: center; margin-bottom: 40px;">Jeux qui peuvent vous intéresser</h2>
@@ -650,6 +714,49 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<?php endif; ?>
 					
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+					<!-- ===================== TABLE INFO CLÉ (SEO + Conversion) ===================== -->
+					<h2>Informations clés</h2>
+					<table style="width: 100%; border-collapse: collapse;">
+						<tbody>
+							<tr>
+								<td style="border: 1px solid #eee; padding: 10px; width: 35%;"><strong>Lieu</strong></td>
+								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($ville_name); ?>, <?php echo esc_html($region_name); ?></td>
+							</tr>
+							<tr>
+								<td style="border: 1px solid #eee; padding: 10px;"><strong>Point de départ</strong></td>
+								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html(get_field('point_de_depart')); ?> (précisé dans les instructions de jeu)</td>
+							</tr>
+							<tr>
+								<td style="border: 1px solid #eee; padding: 10px;"><strong>Durée</strong></td>
+								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($duree); ?></td>
+							</tr>
+							<tr>
+								<td style="border: 1px solid #eee; padding: 10px;"><strong>Équipe</strong></td>
+								<td style="border: 1px solid #eee; padding: 10px;"><?php echo esc_html($nombre_joueurs); ?></td>
+							</tr>
+							<tr>
+								<td style="border: 1px solid #eee; padding: 10px;"><strong>Matériel</strong></td>
+								<td style="border: 1px solid #eee; padding: 10px;">Votre smartphone + connexion data</td>
+							</tr>
+							<tr>
+								<td style="border: 1px solid #eee; padding: 10px;"><strong>Tarif</strong></td>
+								<td style="border: 1px solid #eee; padding: 10px;"><strong><?php echo esc_html($prix); ?> par équipe</strong></td>
+							</tr>
+						</tbody>
+					</table>
+					<div style="text-align: center;">
+						<?php 
+						$payment_url_button = get_field('payment_url');
+						$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
+						$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
+						?>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
+						</a>
+					</div>
+
+					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+					
+					
 
 					<!-- ===================== FAQ (avec riche contenu & FAQ Schema) ===================== -->
 					<h2>FAQ – Jeu de piste <?php echo esc_html($ville_name); ?></h2>
