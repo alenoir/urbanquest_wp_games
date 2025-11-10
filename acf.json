@@ -26,6 +26,27 @@
         "max": 1,
         "elements": "",
         "bidirectional_target": []
+      },
+      {
+        "key": "field_690e2db6eb47d_dept",
+        "label": "Description du département",
+        "name": "description_departement",
+        "aria-label": "",
+        "type": "textarea",
+        "instructions": "Description du département affichée sur la page. Si vide, utilise le contenu de la page.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "maxlength": "",
+        "rows": 4,
+        "allow_in_bindings": 0,
+        "placeholder": "",
+        "new_lines": ""
       }
     ],
     "location": [
@@ -587,8 +608,8 @@
         "label": "Description de la région",
         "name": "description_region",
         "aria-label": "",
-        "type": "text",
-        "instructions": "",
+        "type": "textarea",
+        "instructions": "Description de la région affichée sur la page. Si vide, utilise le contenu de la page.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -598,10 +619,10 @@
         },
         "default_value": "",
         "maxlength": "",
+        "rows": 4,
         "allow_in_bindings": 0,
         "placeholder": "",
-        "prepend": "",
-        "append": ""
+        "new_lines": ""
       },
       {
         "key": "field_690e2dd1eb47e",
@@ -766,6 +787,111 @@
         "max": 1,
         "elements": "",
         "bidirectional_target": []
+      },
+      {
+        "key": "field_city_titre_terrain_de_jeu",
+        "label": "Titre section terrain de jeu",
+        "name": "titre_section_terrain_de_jeu",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre de la première section (ex: \"[ville] devient votre terrain de jeu\"). Utilisez [ville] pour remplacer par le nom de la ville.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "[ville] devient votre terrain de jeu",
+        "maxlength": "",
+        "placeholder": "[ville] devient votre terrain de jeu",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_city_image_terrain_de_jeu",
+        "label": "Image section terrain de jeu",
+        "name": "image_section_terrain_de_jeu",
+        "aria-label": "",
+        "type": "image",
+        "instructions": "Image affichée dans la section terrain de jeu",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "return_format": "array",
+        "library": "all",
+        "min_width": "",
+        "min_height": "",
+        "min_size": "",
+        "max_width": "",
+        "max_height": "",
+        "max_size": "",
+        "mime_types": "",
+        "preview_size": "medium"
+      },
+      {
+        "key": "field_city_description_terrain_de_jeu",
+        "label": "Description section terrain de jeu",
+        "name": "description_section_terrain_de_jeu",
+        "aria-label": "",
+        "type": "wysiwyg",
+        "instructions": "Description de la section terrain de jeu. Utilisez [ville] pour remplacer par le nom de la ville.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "tabs": "all",
+        "toolbar": "full",
+        "media_upload": 1,
+        "delay": 0
+      },
+      {
+        "key": "field_city_titre_jeu_unique",
+        "label": "Titre section jeu unique",
+        "name": "titre_section_jeu_unique",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre de la deuxième section (ex: \"Un jeu de piste unique à [ville]\"). Utilisez [ville] pour remplacer par le nom de la ville.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "Un jeu de piste unique à [ville]",
+        "maxlength": "",
+        "placeholder": "Un jeu de piste unique à [ville]",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_city_description_jeu_unique",
+        "label": "Description section jeu unique",
+        "name": "description_section_jeu_unique",
+        "aria-label": "",
+        "type": "wysiwyg",
+        "instructions": "Description de la section jeu unique. Utilisez [ville] pour remplacer par le nom de la ville.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "tabs": "all",
+        "toolbar": "full",
+        "media_upload": 1,
+        "delay": 0
       }
     ],
     "location": [

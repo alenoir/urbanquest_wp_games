@@ -492,15 +492,15 @@ do_action( 'hestia_before_single_post_wrapper' );
 ?>
 		<article id="post-<?php the_ID(); ?>" <?php post_class('single-game-content'); ?>>
 			<div class="row">
-				<div class="">
-<!-- Breadcrumb Navigation -->
-<?php 
-							if (function_exists('urbanquest_display_breadcrumb_simple')) {
-								urbanquest_display_breadcrumb_simple();
-							}
-							?>
-					<div style="display: flex; flex-wrap: wrap; gap: 0;">
-						<div style="flex: 0 0 50%; max-width: 50%; padding: 0 30px 0 0; box-sizing: border-box;">
+				<div class="col-xs-12">
+					<!-- Breadcrumb Navigation -->
+					<?php 
+						if (function_exists('urbanquest_display_breadcrumb_simple')) {
+							urbanquest_display_breadcrumb_simple();
+						}
+						?>
+					<div class="game-main-layout">
+						<div class="game-main-content">
 							<h2><?php echo esc_html($titre_principal); ?></h2>
 							
 							
@@ -520,13 +520,13 @@ do_action( 'hestia_before_single_post_wrapper' );
 							<p>Nos jeux sont conçus à la main par des game designers, en lien direct avec l'histoire et la géographie de <?php echo esc_html($ville_name); ?>... pour une expérience authentique et unique.</p>
 						</div>
 
-						<div style="flex: 0 0 50%; max-width: 50%; box-sizing: border-box;">
-							<section style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 48px; padding: 24px 22px; max-width: 540px; margin: 0;">
+						<div class="game-sidebar-card">
+							<section class="game-card-section">
 								<!-- Image de fond bleue avec logo (image complète) -->
-								<div style="position: relative; width: 100%; height: 250px; border-radius: 24px; overflow: visible; margin-bottom: 0; background-image: url('<?php echo esc_url($image_carte_offre_url); ?>'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+								<div class="game-card-image" style="background-image: url('<?php echo esc_url($image_carte_offre_url); ?>');">
 									<!-- Badge de prix qui chevauche l'image en bas -->
-									<div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 3;">
-										<div style="display: inline-flex; align-items: center; gap: 12px; background: #F5EA4D; padding: 14px 32px; border-radius: 999px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+									<div class="game-price-badge-wrapper">
+										<div class="game-price-badge">
 											<?php if ($afficher_prix_original) : ?>
 												<span style="color: #1f2a37; font-size: 20px; text-decoration: line-through; font-weight: 500; opacity: 0.7;"><?php echo esc_html($prix_original); ?></span>
 											<?php endif; ?>
@@ -581,14 +581,14 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<img src="http://urbanquest.fr/wp-content/uploads/2025/10/compo-photo-nice.png" alt="" width="561" height="101" class="center aligncenter wp-image-27010 size-full" />
 					<p style="text-align: center; max-width: 860px; margin: 0 auto;">Un savant mélange jeu de piste, chasse au trésor et visite insolite : observation, logique, audace et stratégie vous feront grimper au classement, tout en (re)découvrant <?php echo esc_html($ville_name); ?> et ses lieux emblématiques.</p>
 
-					<div style="display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin-top: 14px;">
-						<div style="flex: 1 1 260px; min-width: 240px; background: #fafafa; padding: 16px; border-radius: 12px;"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="calendar-heart"></i>
+					<div class="game-features-grid">
+						<div class="game-feature-card"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="calendar-heart"></i>
 							<strong>100% libre</strong>
 							Vous lancez la session quand vous voulez, où vous voulez.</div>
-						<div style="flex: 1 1 260px; min-width: 240px; background: #fafafa; padding: 16px; border-radius: 12px;"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="smartphone"></i>
+						<div class="game-feature-card"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="smartphone"></i>
 							<strong>Ultra simple</strong>
 							Vos instructions de jeu par e-mail, votre smartphone… c'est tout.</div>
-						<div style="flex: 1 1 260px; min-width: 240px; background: #fafafa; padding: 16px; border-radius: 12px;"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="swords"></i>
+						<div class="game-feature-card"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="swords"></i>
 							<strong>Fun &amp; challenge</strong>
 							Défis variés, énigmes malignes, score et classement.</div>
 					</div>
@@ -605,9 +605,9 @@ do_action( 'hestia_before_single_post_wrapper' );
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
-					<div style="display: flex; flex-wrap: wrap; gap: 0;">
-						<div style="flex: 0 0 33.333%; max-width: 33.333%; padding: 0 60px 0 0; box-sizing: border-box;">
-							<section style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 48px; padding: 32px 22px 0px 22px; max-width: 540px; margin: 0;">
+					<div class="game-info-section">
+						<div class="game-info-sidebar">
+							<section class="game-card-section">
 								<h5 style="text-align: left;"><?php echo esc_html($titre_section_infos); ?></h5>
 								<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 									<li style="list-style-type: none;">
@@ -642,21 +642,76 @@ do_action( 'hestia_before_single_post_wrapper' );
 							</section>
 						</div>
 
-						<div style="flex: 0 0 66.666%; max-width: 66.666%; box-sizing: border-box;">
-							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($ville_name); ?> devient votre terrain de jeu</h3>
-							<div><img src="http://urbanquest.fr/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png" alt="" width="750" height="139" class="aligncenter size-large wp-image-26967" /></div>
-							<p style="margin: 10px 0;">Avec Urban Quest, oubliez les visites classiques : chaque rue peut cacher un indice, chaque monument peut être la clé d'une énigme.
-							Entre rires, stratégie et adrénaline, vous vivez une expérience intense où l'observation et l'esprit d'équipe font toute la différence.</p>
-							<p style="margin: 10px 0;">Pendant 60 minutes, la ville s'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l'énergie du jeu.</p>
-							<p style="margin: 10px 0;">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à découvrir la ville autrement et à créer des souvenirs mémorables ✨</p>
-
+						<div class="game-info-content">
+							<?php
+							// Récupérer les champs ACF de la ville avec valeurs par défaut
+							$titre_section_terrain_de_jeu = '';
+							$image_section_terrain_de_jeu_url = '';
+							$description_section_terrain_de_jeu = '';
+							$titre_section_jeu_unique = '';
+							$description_section_jeu_unique = '';
+							
+							if ($ville_id) {
+								// Titre section terrain de jeu
+								$titre_section_terrain_de_jeu = get_field('titre_section_terrain_de_jeu', $ville_id);
+								if (empty($titre_section_terrain_de_jeu)) {
+									$titre_section_terrain_de_jeu = '[ville] devient votre terrain de jeu';
+								}
+								$titre_section_terrain_de_jeu = str_replace('[ville]', $ville_name, $titre_section_terrain_de_jeu);
+								
+								// Image section terrain de jeu
+								$image_section_terrain_de_jeu = get_field('image_section_terrain_de_jeu', $ville_id);
+								if ($image_section_terrain_de_jeu) {
+									if (is_array($image_section_terrain_de_jeu) && isset($image_section_terrain_de_jeu['url'])) {
+										$image_section_terrain_de_jeu_url = $image_section_terrain_de_jeu['url'];
+									} elseif (is_string($image_section_terrain_de_jeu)) {
+										$image_section_terrain_de_jeu_url = $image_section_terrain_de_jeu;
+									} elseif (is_numeric($image_section_terrain_de_jeu)) {
+										$image_section_terrain_de_jeu_url = wp_get_attachment_image_url($image_section_terrain_de_jeu, 'large');
+									}
+								}
+								if (empty($image_section_terrain_de_jeu_url)) {
+									$image_section_terrain_de_jeu_url = 'http://urbanquest.fr/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
+								}
+								
+								// Description section terrain de jeu
+								$description_section_terrain_de_jeu = get_field('description_section_terrain_de_jeu', $ville_id);
+								if (empty($description_section_terrain_de_jeu)) {
+									$description_section_terrain_de_jeu = '<p style="margin: 10px 0;">Avec Urban Quest, oubliez les visites classiques : chaque rue peut cacher un indice, chaque monument peut être la clé d\'une énigme. Entre rires, stratégie et adrénaline, vous vivez une expérience intense où l\'observation et l\'esprit d\'équipe font toute la différence.</p><p style="margin: 10px 0;">Pendant 60 minutes, la ville s\'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l\'énergie du jeu.</p><p style="margin: 10px 0;">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à découvrir la ville autrement et à créer des souvenirs mémorables ✨</p>';
+								}
+								$description_section_terrain_de_jeu = str_replace('[ville]', $ville_name, $description_section_terrain_de_jeu);
+								
+								// Titre section jeu unique
+								$titre_section_jeu_unique = get_field('titre_section_jeu_unique', $ville_id);
+								if (empty($titre_section_jeu_unique)) {
+									$titre_section_jeu_unique = 'Un jeu de piste unique à [ville]';
+								}
+								$titre_section_jeu_unique = str_replace('[ville]', $ville_name, $titre_section_jeu_unique);
+								
+								// Description section jeu unique
+								$description_section_jeu_unique = get_field('description_section_jeu_unique', $ville_id);
+								if (empty($description_section_jeu_unique)) {
+									$description_section_jeu_unique = '<p style="margin: 10px 0;">Si vous cherchez une activité insolite à [ville], Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de [ville]. Idéal pour ceux qui veulent découvrir autrement [ville] en mêlant culture, divertissement et esprit de compétition.</p><p style="margin: 10px 0;">🔎 <em>Fun fact :</em> avec Urban Quest, c\'est à votre tour d\'apporter couleurs et énergie à [ville] en résolvant ses énigmes !</p>';
+								}
+								$description_section_jeu_unique = str_replace('[ville]', $ville_name, $description_section_jeu_unique);
+							} else {
+								// Fallback si pas de ville
+								$titre_section_terrain_de_jeu = $ville_name . ' devient votre terrain de jeu';
+								$image_section_terrain_de_jeu_url = 'http://urbanquest.fr/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
+								$description_section_terrain_de_jeu = '<p style="margin: 10px 0;">Avec Urban Quest, oubliez les visites classiques : chaque rue peut cacher un indice, chaque monument peut être la clé d\'une énigme. Entre rires, stratégie et adrénaline, vous vivez une expérience intense où l\'observation et l\'esprit d\'équipe font toute la différence.</p><p style="margin: 10px 0;">Pendant 60 minutes, la ville s\'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l\'énergie du jeu.</p><p style="margin: 10px 0;">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à découvrir la ville autrement et à créer des souvenirs mémorables ✨</p>';
+								$titre_section_jeu_unique = 'Un jeu de piste unique à ' . $ville_name;
+								$description_section_jeu_unique = '<p style="margin: 10px 0;">Si vous cherchez une activité insolite à ' . esc_html($ville_name) . ', Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de ' . esc_html($ville_name) . '. Idéal pour ceux qui veulent découvrir autrement ' . esc_html($ville_name) . ' en mêlant culture, divertissement et esprit de compétition.</p><p style="margin: 10px 0;">🔎 <em>Fun fact :</em> avec Urban Quest, c\'est à votre tour d\'apporter couleurs et énergie à ' . esc_html($ville_name) . ' en résolvant ses énigmes !</p>';
+							}
+							?>
+							
+							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
+							<div><img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?>" width="750" height="139" class="aligncenter size-large wp-image-26967" /></div>
+							<?php echo wp_kses_post($description_section_terrain_de_jeu); ?>
 
 							<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
-							<h3 style="margin: 0 0 10px; text-align: center;">Un jeu de piste unique à <?php echo esc_html($ville_name); ?></h3>
-							<p style="margin: 10px 0;">Si vous cherchez une activité insolite à <?php echo esc_html($ville_name); ?>, Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de <?php echo esc_html($ville_name); ?>.
-							Idéal pour ceux qui veulent découvrir autrement <?php echo esc_html($ville_name); ?> en mêlant culture, divertissement et esprit de compétition.</p>
-							<p style="margin: 10px 0;">🔎 <em>Fun fact :</em> avec Urban Quest, c'est à votre tour d'apporter couleurs et énergie à <?php echo esc_html($ville_name); ?> en résolvant ses énigmes !</p>
+							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_jeu_unique); ?></h3>
+							<?php echo wp_kses_post($description_section_jeu_unique); ?>
 						</div>
 					</div>
 
@@ -716,7 +771,8 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 					<!-- ===================== TABLE INFO CLÉ (SEO + Conversion) ===================== -->
 					<h2>Informations clés</h2>
-					<table style="width: 100%; border-collapse: collapse;">
+					<div class="info-table-wrapper">
+						<table class="info-table">
 						<tbody>
 							<tr>
 								<td style="border: 1px solid #eee; padding: 10px; width: 35%;"><strong>Lieu</strong></td>
@@ -744,6 +800,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 							</tr>
 						</tbody>
 					</table>
+					</div>
 					<div style="text-align: center;">
 						<?php 
 						$payment_url_button = get_field('payment_url');

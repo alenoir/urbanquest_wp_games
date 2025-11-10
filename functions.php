@@ -24,6 +24,20 @@ endif;
 
 add_action( 'wp_enqueue_scripts', 'chld_thm_cfg_parent_css', 10 );
 
+// Enqueue styles responsives Urban Quest
+if ( !function_exists( 'urbanquest_enqueue_responsive_styles' ) ):
+    function urbanquest_enqueue_responsive_styles() {
+        wp_enqueue_style( 
+            'urbanquest-responsive', 
+            get_stylesheet_directory_uri() . '/urbanquest-responsive.css', 
+            array( 'chld_thm_cfg_parent' ), 
+            '1.0.0' 
+        );
+    }
+endif;
+
+add_action( 'wp_enqueue_scripts', 'urbanquest_enqueue_responsive_styles', 20 );
+
 // END ENQUEUE PARENT ACTION
 
 // ============================================================================
@@ -32,47 +46,58 @@ add_action( 'wp_enqueue_scripts', 'chld_thm_cfg_parent_css', 10 );
 // IMPORTANT: Ce projet est un child theme de Hestia
 // 
 // Fonctions:
-// - Supprime les métadonnées "publié par" pour le post type "game"
-// - Supprime la section "Articles similaires" pour le post type "game"
+// - Supprime les métadonnées "publié par" pour les post types personnalisés (game, country, region, departement, ville)
+// - Supprime la section "Articles similaires" pour les post types personnalisés
 // ============================================================================
 
-// Supprimer uniquement les métadonnées "publié par" pour le post type "game"
+// Supprimer uniquement les métadonnées "publié par" pour les post types personnalisés
 add_action('template_redirect', function() {
-	if (is_singular('game')) {
-		// Supprimer uniquement les hooks qui affichent "publié par"
-		remove_all_actions('hestia_single_post_meta');
-		remove_all_actions('hestia_blog_post_meta');
-		remove_all_actions('hestia_after_single_post_title');
-		remove_all_actions('hestia_after_post_title');
-		
-		// Supprimer la section "Articles similaires"
-		remove_all_actions('hestia_blog_related_posts');
-		remove_all_actions('hestia_related_posts');
-		remove_all_actions('hestia_after_single_post_content');
-		
-		// Utiliser des filtres pour supprimer uniquement la sortie "publié par"
-		add_filter('hestia_single_post_meta', '__return_empty_string', 999);
-		add_filter('hestia_blog_post_meta', '__return_empty_string', 999);
-		add_filter('hestia_posted_on', '__return_empty_string', 999);
+	$post_types = array('game', 'country', 'region', 'departement', 'ville');
+	foreach ($post_types as $post_type) {
+		if (is_singular($post_type)) {
+			// Supprimer uniquement les hooks qui affichent "publié par"
+			remove_all_actions('hestia_single_post_meta');
+			remove_all_actions('hestia_blog_post_meta');
+			remove_all_actions('hestia_after_single_post_title');
+			remove_all_actions('hestia_after_post_title');
+			
+			// Supprimer la section "Articles similaires"
+			remove_all_actions('hestia_blog_related_posts');
+			remove_all_actions('hestia_related_posts');
+			remove_all_actions('hestia_after_single_post_content');
+			
+			// Utiliser des filtres pour supprimer uniquement la sortie "publié par"
+			add_filter('hestia_single_post_meta', '__return_empty_string', 999);
+			add_filter('hestia_blog_post_meta', '__return_empty_string', 999);
+			add_filter('hestia_posted_on', '__return_empty_string', 999);
+			break; // Sortir de la boucle une fois qu'on a trouvé le bon post type
+		}
 	}
 }, 1);
 
 // Supprimer aussi via wp hook
 add_action('wp', function() {
-	if (is_singular('game')) {
-		remove_all_actions('hestia_single_post_meta');
-		remove_all_actions('hestia_blog_post_meta');
-		remove_all_actions('hestia_after_single_post_title');
-		remove_all_actions('hestia_after_post_title');
-		remove_all_actions('hestia_blog_related_posts');
-		remove_all_actions('hestia_related_posts');
+	$post_types = array('game', 'country', 'region', 'departement', 'ville');
+	foreach ($post_types as $post_type) {
+		if (is_singular($post_type)) {
+			remove_all_actions('hestia_single_post_meta');
+			remove_all_actions('hestia_blog_post_meta');
+			remove_all_actions('hestia_after_single_post_title');
+			remove_all_actions('hestia_after_post_title');
+			remove_all_actions('hestia_blog_related_posts');
+			remove_all_actions('hestia_related_posts');
+			break; // Sortir de la boucle une fois qu'on a trouvé le bon post type
+		}
 	}
 }, 1);
 
 // Supprimer les articles similaires via le filtre
 add_filter('hestia_show_related_posts', function($show) {
-	if (is_singular('game')) {
-		return false;
+	$post_types = array('game', 'country', 'region', 'departement', 'ville');
+	foreach ($post_types as $post_type) {
+		if (is_singular($post_type)) {
+			return false;
+		}
 	}
 	return $show;
 }, 999);
@@ -1236,3 +1261,345 @@ function urbanquest_display_breadcrumb_simple() {
 	</div>
 	<?php
 }
+
+// ============================================================================
+// PERSONNALISATION DU HEADER HESTIA
+// ============================================================================
+// Cette section permet de personnaliser le header du thème Hestia
+// Vous pouvez décommenter et modifier les fonctions selon vos besoins
+// ============================================================================
+
+/**
+ * Modifier le logo du header
+ * Remplace le logo par défaut par un logo personnalisé
+ */
+/*
+function urbanquest_custom_header_logo() {
+	// Retirer le logo par défaut de Hestia
+	remove_action('hestia_before_header_content', 'hestia_the_header_content', 10);
+	
+	// Ajouter votre logo personnalisé
+	add_action('hestia_before_header_content', function() {
+		?>
+		<div class="custom-logo-wrapper">
+			<a href="<?php echo esc_url(home_url('/')); ?>">
+				<img src="<?php echo esc_url(get_stylesheet_directory_uri() . '/images/logo.png'); ?>" alt="<?php bloginfo('name'); ?>" />
+			</a>
+		</div>
+		<?php
+	}, 10);
+}
+add_action('init', 'urbanquest_custom_header_logo');
+*/
+
+/**
+ * Modifier le menu de navigation du header
+ * Personnaliser les éléments du menu principal
+ */
+/*
+function urbanquest_custom_header_menu($items, $args) {
+	// Modifier les items du menu ici
+	// Par exemple, ajouter un élément personnalisé
+	if ($args->theme_location == 'primary') {
+		$items .= '<li class="custom-menu-item"><a href="/contact">Contact</a></li>';
+	}
+	return $items;
+}
+add_filter('wp_nav_menu_items', 'urbanquest_custom_header_menu', 10, 2);
+*/
+
+/**
+ * Ajouter du contenu personnalisé dans le header
+ * Par exemple : bouton CTA, barre de recherche, etc.
+ */
+/*
+function urbanquest_add_header_content() {
+	?>
+	<div class="urbanquest-header-custom-content" style="display: flex; align-items: center; gap: 15px;">
+		<!-- Exemple : Bouton CTA -->
+		<a href="/reservation" class="btn btn-primary" style="padding: 10px 20px; background: #00bbff; color: white; text-decoration: none; border-radius: 5px;">
+			Réserver maintenant
+		</a>
+	</div>
+	<?php
+}
+add_action('hestia_before_header_content', 'urbanquest_add_header_content', 20);
+*/
+
+/**
+ * Modifier les classes CSS du header
+ * Permet d'ajouter des classes personnalisées pour le styling
+ */
+/*
+function urbanquest_header_classes($classes) {
+	$classes[] = 'urbanquest-custom-header';
+	return $classes;
+}
+add_filter('hestia_header_classes', 'urbanquest_header_classes');
+*/
+
+/**
+ * Modifier la hauteur du header
+ * Via CSS personnalisé - Réduit la hauteur en ciblant le padding ET la hauteur
+ */
+function urbanquest_custom_header_styles() {
+	?>
+	<style>
+		/* Personnalisation du header Hestia - Réduction de la hauteur */
+		
+		/* Réduire la hauteur minimale du header */
+		.hestia-top-bar,
+		.navbar.navbar-default {
+			min-height: 60px !important;
+			height: auto !important;
+		}
+		
+		/* Réduire le padding du conteneur principal du header */
+		.navbar.navbar-default .navbar-header,
+		.navbar.navbar-default .navbar-collapse {
+			padding-top: 8px !important;
+			padding-bottom: 8px !important;
+		}
+		
+		/* Réduire le padding du logo/brand */
+		.navbar .navbar-brand {
+			padding-top: 10px !important;
+			padding-bottom: 10px !important;
+			height: auto !important;
+			line-height: 1.2 !important;
+		}
+		
+		/* Réduire la taille du logo */
+		.navbar .navbar-brand img {
+			max-height: 40px !important;
+			height: auto !important;
+		}
+		
+		/* Réduire le padding des items du menu */
+		.navbar .navbar-nav > li > a {
+			font-weight: 500;
+			padding-top: 10px !important;
+			padding-bottom: 10px !important;
+			padding-left: 15px !important;
+			padding-right: 15px !important;
+			line-height: 1.4 !important;
+		}
+		
+		/* Réduire le padding du conteneur du menu */
+		.navbar .navbar-nav {
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+		}
+		
+		/* Réduire le padding de la navbar elle-même */
+		.navbar.navbar-default {
+			padding-top: 0 !important;
+			padding-bottom: 0 !important;
+		}
+		
+		/* Réduire la top bar si elle existe */
+		.hestia-top-bar {
+			padding-top: 5px !important;
+			padding-bottom: 5px !important;
+			min-height: 30px !important;
+		}
+		
+		/* Réduire le padding du conteneur interne */
+		.navbar .container,
+		.navbar .container-fluid {
+			padding-top: 5px !important;
+			padding-bottom: 5px !important;
+		}
+		
+		/* Ajouter un fond personnalisé au header */
+		.navbar.navbar-default {
+			background-color: #ffffff;
+			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+		}
+		
+		/* Personnaliser les couleurs du menu */
+		.navbar .navbar-nav > li > a {
+			color: #333;
+		}
+		
+		.navbar .navbar-nav > li > a:hover {
+			color: #00bbff;
+		}
+		
+		/* Sticky header (header fixe lors du scroll) */
+		.navbar.navbar-default.navbar-fixed-top {
+			position: fixed;
+			top: 0;
+			width: 100%;
+			z-index: 1000;
+		}
+		
+		/* Ajouter un padding au body pour compenser le header fixe */
+		body.admin-bar .navbar-fixed-top {
+			top: 32px;
+		}
+		
+		/* Version mobile - encore plus compact */
+		@media (max-width: 768px) {
+			.navbar.navbar-default {
+				min-height: 50px !important;
+			}
+			
+			.navbar .navbar-brand {
+				padding-top: 8px !important;
+				padding-bottom: 8px !important;
+			}
+			
+			.navbar .navbar-brand img {
+				max-height: 35px !important;
+			}
+			
+			.navbar .navbar-toggle {
+				margin-top: 8px !important;
+				margin-bottom: 8px !important;
+				padding: 6px 10px !important;
+			}
+			
+			.navbar .navbar-nav > li > a {
+				padding-top: 8px !important;
+				padding-bottom: 8px !important;
+			}
+		}
+		
+		/* Réduire la hauteur du titre dans le conteneur (ex: "Place de la bourse bordeaux bis") */
+		.blog-post-wrapper .container,
+		.single-post .container,
+		.hestia-single-post .container {
+			padding-top: 0 !important;
+			padding-bottom: 0 !important;
+		}
+		
+		/* Réduire le padding autour du titre de la page */
+		.hestia-title,
+		.entry-title,
+		.single-post .entry-title,
+		.blog-post-wrapper .entry-title {
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+			padding-top: 0 !important;
+			padding-bottom: 0 !important;
+			line-height: 1.1 !important;
+		}
+		
+		/* Réduire le padding du conteneur qui affiche le titre */
+		.hestia-single-post-header,
+		.single-post-header,
+		.entry-header {
+			padding-top: 0 !important;
+			padding-bottom: 0 !important;
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+		}
+		
+		/* Cibler spécifiquement les conteneurs avec titre dans le contenu */
+		.blog-post-wrapper > .container > .row,
+		.single-post-content .container {
+			padding-top: 0 !important;
+			padding-bottom: 0 !important;
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+		}
+		
+		/* Réduire l'espacement général du conteneur principal */
+		.blog-post-wrapper {
+			padding-top: 0 !important;
+			padding-bottom: 0 !important;
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+		}
+		
+		/* Réduire encore plus le padding du conteneur principal */
+		.blog-post-wrapper .container {
+			padding-top: 0 !important;
+			padding-bottom: 0 !important;
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+		}
+		
+		/* Réduire les marges des sections */
+		.blog-post-wrapper .row {
+			margin-top: 0 !important;
+			margin-bottom: 0 !important;
+		}
+		
+		/* Réduire tous les espacements supplémentaires */
+		.blog-post-wrapper .col-xs-12,
+		.blog-post-wrapper .col-md-12,
+		.blog-post-wrapper [class*="col-"] {
+			padding-top: 0 !important;
+			margin-top: 0 !important;
+		}
+		
+		/* Cibler directement le conteneur avec le titre */
+		.container:has(.entry-title),
+		.container:has(.hestia-title) {
+			padding-top: 140px !important;
+			padding-bottom: 40px !important;
+		}
+		
+		/* Réduire le padding-top pour mobile uniquement */
+		@media (max-width: 768px) {
+			.container:has(.entry-title),
+			.container:has(.hestia-title) {
+				padding-top: 60px !important;
+				padding-bottom: 30px !important;
+			}
+		}
+		
+		.page-header.header-small {
+			min-height: 140px !important;
+		}
+	</style>
+	<?php
+}
+add_action('wp_head', 'urbanquest_custom_header_styles', 20);
+
+/**
+ * Ajouter le breadcrumb dans le header (déjà implémenté)
+ * Cette fonction est déjà définie plus haut dans le fichier
+ * Vous pouvez l'appeler avec : do_action('hestia_before_header_content', 'urbanquest_display_breadcrumb');
+ */
+
+/**
+ * Modifier le texte du bouton "Call to Action" du header (si présent)
+ */
+/*
+function urbanquest_custom_header_cta($text) {
+	return 'Réserver maintenant';
+}
+add_filter('hestia_header_cta_text', 'urbanquest_custom_header_cta');
+*/
+
+/**
+ * Désactiver certains éléments du header
+ * Par exemple : désactiver la barre supérieure (top bar)
+ */
+/*
+function urbanquest_remove_header_elements() {
+	// Retirer la top bar
+	remove_action('hestia_before_header', 'hestia_the_header_top_bar', 10);
+	
+	// Retirer le bouton CTA du header
+	remove_action('hestia_before_header_content', 'hestia_the_header_cta', 20);
+}
+add_action('wp', 'urbanquest_remove_header_elements');
+*/
+
+/**
+ * Ajouter un élément personnalisé après le menu de navigation
+ */
+/*
+function urbanquest_add_after_nav_menu() {
+	?>
+	<div class="urbanquest-header-extra">
+		<!-- Votre contenu personnalisé ici -->
+	</div>
+	<?php
+}
+add_action('hestia_after_navigation', 'urbanquest_add_after_nav_menu');
+*/
