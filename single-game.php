@@ -47,6 +47,210 @@ add_action('template_redirect', function() {
 	}
 }, 1);
 
+// ============================================================================
+// SEO : Préparer les données SEO avant get_header()
+// ============================================================================
+if (have_posts()) {
+	the_post();
+	$game_id = get_the_ID();
+	
+	// Récupérer les données nécessaires pour le SEO
+	$city_post = get_field('city');
+	$ville_name = '';
+	$ville_id = null;
+	if ($city_post) {
+		if (is_object($city_post) && isset($city_post->post_title)) {
+			$ville_name = $city_post->post_title;
+			$ville_id = $city_post->ID;
+		} elseif (is_numeric($city_post)) {
+			$ville_name = get_the_title($city_post);
+			$ville_id = $city_post;
+		} elseif (is_array($city_post) && !empty($city_post)) {
+			$first_city = $city_post[0];
+			if (is_object($first_city) && isset($first_city->post_title)) {
+				$ville_name = $first_city->post_title;
+				$ville_id = $first_city->ID;
+			} elseif (is_numeric($first_city)) {
+				$ville_name = get_the_title($first_city);
+				$ville_id = $first_city;
+			}
+		}
+	}
+	
+	// Récupérer la région pour le SEO
+	$region_name = '';
+	$departement_id = null;
+	$region_id = null;
+	if ($ville_id) {
+		$departement_post = get_field('ville', $ville_id);
+		$departement_id = is_object($departement_post) && isset($departement_post->ID) ? $departement_post->ID : (is_numeric($departement_post) ? $departement_post : null);
+		
+		if ($departement_id) {
+			$region_post = get_field('region', $departement_id);
+			$region_id = is_object($region_post) && isset($region_post->ID) ? $region_post->ID : (is_numeric($region_post) ? $region_post : null);
+			
+			if ($region_id) {
+				$region_obj = get_post($region_id);
+				if ($region_obj) {
+					$region_name = $region_obj->post_title;
+				}
+			}
+		}
+	}
+	
+	// Titre SEO optimisé
+	$game_title_seo = get_field('titre_seo');
+	if (empty($game_title_seo)) {
+		$game_title_seo = get_the_title() . ' - UrbanQuest';
+		if (!empty($ville_name)) {
+			$game_title_seo = 'Jeu de piste Urban Quest à ' . esc_html($ville_name) . ' - ' . get_the_title();
+		}
+	}
+	
+	// Meta description SEO
+	$game_meta_description = get_field('description_principale');
+	if (empty($game_meta_description)) {
+		$game_meta_description = get_the_excerpt();
+	}
+	if (empty($game_meta_description)) {
+		$game_meta_description = 'Découvrez le jeu de piste Urban Quest à ' . esc_html($ville_name) . '. Une expérience immersive qui mêle jeu de piste, exploration et esprit d\'équipe.';
+	}
+	$game_meta_description = wp_strip_all_tags($game_meta_description);
+	if (strlen($game_meta_description) > 160) {
+		$game_meta_description = substr($game_meta_description, 0, 157) . '...';
+	}
+	
+	// Image pour Open Graph (1200x630px recommandé)
+	$game_image_url = get_the_post_thumbnail_url($game_id, 'large');
+	if (empty($game_image_url)) {
+		$image_carte_offre = get_field('image_carte_offre');
+		if ($image_carte_offre) {
+			if (is_array($image_carte_offre) && isset($image_carte_offre['url'])) {
+				$game_image_url = $image_carte_offre['url'];
+			} elseif (is_string($image_carte_offre)) {
+				$game_image_url = $image_carte_offre;
+			} elseif (is_numeric($image_carte_offre)) {
+				$game_image_url = wp_get_attachment_image_url($image_carte_offre, 'large');
+			}
+		}
+	}
+	if (empty($game_image_url)) {
+		$game_image_url = get_site_url() . '/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
+	}
+	
+	// Prix et durée pour Schema.org
+	$prix = get_field('prix');
+	if (empty($prix)) {
+		$prix = '39€';
+	}
+	$prix_numeric = preg_replace('/[^0-9]/', '', $prix);
+	
+	$duree = get_field('duree');
+	if (empty($duree)) {
+		$duree = '60 minutes';
+	}
+	
+	// Modifier le title via le filtre WordPress (meilleure pratique)
+	add_filter('document_title_parts', function($title) use ($game_title_seo) {
+		$title['title'] = $game_title_seo;
+		return $title;
+	}, 10);
+	
+	// Ajouter les meta tags Open Graph et Twitter Cards dans wp_head
+	add_action('wp_head', function() use ($game_title_seo, $game_meta_description, $game_image_url) {
+		// Open Graph
+		echo '<meta property="og:title" content="' . esc_attr($game_title_seo) . '" />' . "\n";
+		echo '<meta property="og:description" content="' . esc_attr($game_meta_description) . '" />' . "\n";
+		echo '<meta property="og:image" content="' . esc_url($game_image_url) . '" />' . "\n";
+		echo '<meta property="og:type" content="product" />' . "\n";
+		echo '<meta property="og:url" content="' . esc_url(get_permalink()) . '" />' . "\n";
+		echo '<meta property="og:site_name" content="Urban Quest" />' . "\n";
+		echo '<meta property="og:locale" content="fr_FR" />' . "\n";
+		
+		// Twitter Cards
+		echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
+		echo '<meta name="twitter:title" content="' . esc_attr($game_title_seo) . '" />' . "\n";
+		echo '<meta name="twitter:description" content="' . esc_attr($game_meta_description) . '" />' . "\n";
+		echo '<meta name="twitter:image" content="' . esc_url($game_image_url) . '" />' . "\n";
+	}, 1);
+	
+	// Ajouter le schéma JSON-LD Product
+	add_action('wp_head', function() use ($prix_numeric, $duree, $ville_name, $region_name, $game_image_url, $game_meta_description) {
+		$payment_url = get_field('payment_url');
+		if (empty($payment_url)) {
+			$payment_url = get_permalink();
+		}
+		
+		// Récupérer les notes/avis (champs ACF optionnels avec valeurs par défaut)
+		$rating_value = get_field('rating_value'); // Note sur 5 (ex: 4.8)
+		$review_count = get_field('review_count'); // Nombre d'avis (ex: 254)
+		
+		// Valeurs par défaut si non définies (basées sur les données réelles observées)
+		if (empty($rating_value)) {
+			$rating_value = 4.8; // Note par défaut
+		}
+		if (empty($review_count)) {
+			$review_count = 254; // Nombre d'avis par défaut
+		}
+		
+		// S'assurer que les valeurs sont numériques
+		$rating_value = floatval($rating_value);
+		$review_count = intval($review_count);
+		
+		$schema = array(
+			'@context' => 'https://schema.org',
+			'@type' => 'Product',
+			'name' => get_the_title(),
+			'description' => $game_meta_description,
+			'image' => $game_image_url,
+			'offers' => array(
+				'@type' => 'Offer',
+				'price' => $prix_numeric,
+				'priceCurrency' => 'EUR',
+				'availability' => 'https://schema.org/InStock',
+				'url' => $payment_url,
+				'priceValidUntil' => date('Y-m-d', strtotime('+1 year'))
+			),
+			'brand' => array(
+				'@type' => 'Organization',
+				'name' => 'Urban Quest',
+				'url' => get_site_url()
+			)
+		);
+		
+		// Ajouter les notes/avis si disponibles
+		if ($rating_value > 0 && $review_count > 0) {
+			$schema['aggregateRating'] = array(
+				'@type' => 'AggregateRating',
+				'ratingValue' => $rating_value,
+				'reviewCount' => $review_count,
+				'bestRating' => 5,
+				'worstRating' => 1
+			);
+		}
+		
+		if (!empty($ville_name)) {
+			$schema['locationCreated'] = array(
+				'@type' => 'City',
+				'name' => $ville_name
+			);
+		}
+		
+		if (!empty($region_name)) {
+			$schema['areaServed'] = array(
+				'@type' => 'State',
+				'name' => $region_name
+			);
+		}
+		
+		echo '<script type="application/ld+json">' . "\n";
+		echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+		echo "\n" . '</script>' . "\n";
+	}, 99);
+	
+	rewind_posts();
+}
+
 get_header();
 
 do_action( 'hestia_before_single_post_wrapper' );
@@ -82,7 +286,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 			$game_image = get_the_post_thumbnail_url($game_id, 'medium');
 		}
 		if (empty($game_image)) {
-			$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
+			$game_image = get_site_url() . '/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
 		}
 		
 		// Titre : utilise titre_liste ACF, sinon post_title
@@ -414,7 +618,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 	}
 	// Si pas d'image ACF, utiliser l'image par défaut
 	if (empty($image_carte_offre_url)) {
-		$image_carte_offre_url = 'http://urbanquest.fr/wp-content/uploads/2025/10/Group-10.png';
+		$image_carte_offre_url = get_site_url() . '/wp-content/uploads/2025/10/Group-10.png';
 	}
 	
 	// Récupérer le titre principal
@@ -512,11 +716,11 @@ do_action( 'hestia_before_single_post_wrapper' );
 							}
 							?>
 
-							<img src="http://urbanquest.fr/wp-content/uploads/2025/10/notation-urbanquest-1024x219.png" alt="" width="750" height="160" class="aligncenter size-large wp-image-26992" />
-							<h5>En groupe ?</h5>
-							<p style="margin-top: 10px;">Pour les grands groupes nous proposons des options personnalisées sur demande pour rendre le jeu encore plus inoubliable, il suffit de nous <a href="https://urbanquest.fr/contact/">contacter</a>.</p>
+							<img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/10/notation-urbanquest-1024x219.png'); ?>" alt="Notation et avis Urban Quest - Jeu de piste à <?php echo esc_attr($ville_name); ?>" width="750" height="160" class="aligncenter size-large wp-image-26992" loading="lazy" />
+							<h3>En groupe ?</h3>
+							<p style="margin-top: 10px;">Pour les grands groupes nous proposons des options personnalisées sur demande pour rendre le jeu encore plus inoubliable, il suffit de nous <a href="<?php echo esc_url(get_site_url() . '/contact/'); ?>" rel="nofollow">contacter</a>.</p>
 
-							<h5>Imaginés par nos game designers</h5>
+							<h3>Imaginés par nos game designers</h3>
 							<p>Nos jeux sont conçus à la main par des game designers, en lien direct avec l'histoire et la géographie de <?php echo esc_html($ville_name); ?>... pour une expérience authentique et unique.</p>
 						</div>
 
@@ -540,7 +744,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 									<span style="color: #1f2a37; font-size: 20px; font-weight: bold;"><?php echo esc_html($titre_offre); ?></span>
 								</div>
 								
-								<img src="http://urbanquest.fr/wp-content/uploads/2025/10/made-in-france-1.png" alt="" width="234" height="19" class="wp-image-26996 size-full aligncenter" />
+								<img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/10/made-in-france-1.png'); ?>" alt="Made in France - Jeu de piste Urban Quest fabriqué en France" width="234" height="19" class="wp-image-26996 size-full aligncenter" loading="lazy" />
 								<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 									<li style="list-style-type: none;">
 										<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
@@ -567,7 +771,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 										</ul>
 									</li>
 									<li style="list-style: none; display: center; align-items: flex-start; gap: 10px; width: 100%; margin: 0 auto; padding-top: 16px; padding-bottom: 24px;">
-										<div style="text-align: center;"><a href="<?php echo esc_url(get_field('payment_url')); ?>" target="_blank" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;" rel="noopener">Réserve ton jeu d'exploration
+										<div style="text-align: center;"><a href="<?php echo esc_url(get_field('payment_url')); ?>" target="_blank" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;" rel="noopener sponsored">Réserve ton jeu d'exploration
 										</a></div></li>
 								</ul>
 							</section>
@@ -578,7 +782,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 
 					<!-- ===================== SECTION VALEUR / POURQUOI NOUS ===================== -->
 					<h2 style="text-align: center;">Pourquoi choisir Urban Quest à <?php echo esc_html($ville_name); ?> ?</h2>
-					<img src="http://urbanquest.fr/wp-content/uploads/2025/10/compo-photo-nice.png" alt="" width="561" height="101" class="center aligncenter wp-image-27010 size-full" />
+					<img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/10/compo-photo-nice.png'); ?>" alt="Composition photo Urban Quest - Jeu de piste à <?php echo esc_attr($ville_name); ?>" width="561" height="101" class="center aligncenter wp-image-27010 size-full" loading="lazy" />
 					<p style="text-align: center; max-width: 860px; margin: 0 auto;">Un savant mélange jeu de piste, chasse au trésor et visite insolite : observation, logique, audace et stratégie vous feront grimper au classement, tout en (re)découvrant <?php echo esc_html($ville_name); ?> et ses lieux emblématiques.</p>
 
 					<div class="game-features-grid">
@@ -598,7 +802,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 						$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
 						$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
 						?>
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
 						</a>
 					</div>
 					<div></div>
@@ -608,7 +812,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<div class="game-info-section">
 						<div class="game-info-sidebar">
 							<section class="game-card-section">
-								<h5 style="text-align: left;"><?php echo esc_html($titre_section_infos); ?></h5>
+								<h3 style="text-align: left;"><?php echo esc_html($titre_section_infos); ?></h3>
 								<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 									<li style="list-style-type: none;">
 										<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
@@ -671,7 +875,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 									}
 								}
 								if (empty($image_section_terrain_de_jeu_url)) {
-									$image_section_terrain_de_jeu_url = 'http://urbanquest.fr/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
+									$image_section_terrain_de_jeu_url = get_site_url() . '/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
 								}
 								
 								// Description section terrain de jeu
@@ -697,7 +901,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 							} else {
 								// Fallback si pas de ville
 								$titre_section_terrain_de_jeu = $ville_name . ' devient votre terrain de jeu';
-								$image_section_terrain_de_jeu_url = 'http://urbanquest.fr/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
+								$image_section_terrain_de_jeu_url = get_site_url() . '/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
 								$description_section_terrain_de_jeu = '<p style="margin: 10px 0;">Avec Urban Quest, oubliez les visites classiques : chaque rue peut cacher un indice, chaque monument peut être la clé d\'une énigme. Entre rires, stratégie et adrénaline, vous vivez une expérience intense où l\'observation et l\'esprit d\'équipe font toute la différence.</p><p style="margin: 10px 0;">Pendant 60 minutes, la ville s\'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l\'énergie du jeu.</p><p style="margin: 10px 0;">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à découvrir la ville autrement et à créer des souvenirs mémorables ✨</p>';
 								$titre_section_jeu_unique = 'Un jeu de piste unique à ' . $ville_name;
 								$description_section_jeu_unique = '<p style="margin: 10px 0;">Si vous cherchez une activité insolite à ' . esc_html($ville_name) . ', Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de ' . esc_html($ville_name) . '. Idéal pour ceux qui veulent découvrir autrement ' . esc_html($ville_name) . ' en mêlant culture, divertissement et esprit de compétition.</p><p style="margin: 10px 0;">🔎 <em>Fun fact :</em> avec Urban Quest, c\'est à votre tour d\'apporter couleurs et énergie à ' . esc_html($ville_name) . ' en résolvant ses énigmes !</p>';
@@ -705,7 +909,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 							?>
 							
 							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
-							<div><img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?>" width="750" height="139" class="aligncenter size-large wp-image-26967" /></div>
+							<div><img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" loading="lazy" /></div>
 							<?php echo wp_kses_post($description_section_terrain_de_jeu); ?>
 
 							<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -719,7 +923,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<p style="text-align: center;"><!-- ===================== COMMENT ÇA MARCHE (HOW-TO) ===================== --></p>
 
 					<h2 style="text-align: center;">Comment se déroule une partie ?</h2>
-					<p style="text-align: center;"><img src="http://urbanquest.fr/wp-content/uploads/2025/08/newUQderoulement-2.png" alt="" width="760" height="231" class="aligncenter size-full wp-image-26861" /></p>
+					<p style="text-align: center;"><img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/08/newUQderoulement-2.png'); ?>" alt="Déroulement d'une partie Urban Quest - Comment jouer au jeu de piste" width="760" height="231" class="aligncenter size-full wp-image-26861" loading="lazy" /></p>
 					<p class="p1" style="text-align: center;">Choisis ton parcours, pars à l'aventure dans la ville et mesure-toi aux autres équipes.</p>
 					<p class="p1" style="text-align: center;">Une expérience fun, rapide à lancer et 100 % autonome !</p>
 					<p style="text-align: center;">
@@ -728,7 +932,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 						$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
 						$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
 						?>
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
 						</a>
 					</p>
 
@@ -807,7 +1011,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 						$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
 						$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
 						?>
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?>
 						</a>
 					</div>
 

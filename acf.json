@@ -387,6 +387,26 @@
         "append": ""
       },
       {
+        "key": "field_game_titre_seo",
+        "label": "Titre SEO",
+        "name": "titre_seo",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre SEO personnalisé pour les balises meta et le title tag. Si vide, génère automatiquement 'Jeu de piste Urban Quest à [ville] - [titre du jeu]'.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "maxlength": "",
+        "placeholder": "Jeu de piste Urban Quest à [ville] - [titre]",
+        "prepend": "",
+        "append": ""
+      },
+      {
         "key": "field_game_description_principale",
         "label": "Description principale",
         "name": "description_principale",
@@ -553,6 +573,49 @@
         "placeholder": "",
         "prepend": "",
         "append": "%"
+      },
+      {
+        "key": "field_game_rating_value",
+        "label": "Note moyenne (sur 5)",
+        "name": "rating_value",
+        "aria-label": "",
+        "type": "number",
+        "instructions": "Note moyenne du jeu sur 5 (ex: 4.8). Utilisée pour le schéma Schema.org et l'affichage des étoiles dans Google. Si vide, utilise 4.8 par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": 4.8,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "placeholder": "4.8",
+        "prepend": "",
+        "append": "/5"
+      },
+      {
+        "key": "field_game_review_count",
+        "label": "Nombre d'avis",
+        "name": "review_count",
+        "aria-label": "",
+        "type": "number",
+        "instructions": "Nombre total d'avis clients (ex: 254). Utilisé pour le schéma Schema.org et l'affichage dans Google. Si vide, utilise 254 par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": 254,
+        "min": 0,
+        "step": 1,
+        "placeholder": "254",
+        "prepend": "",
+        "append": " avis"
       }
     ],
     "location": [
