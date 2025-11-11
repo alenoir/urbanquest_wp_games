@@ -230,6 +230,63 @@ do_action('hestia_before_single_post_wrapper');
 	$payment_url_button = urbanquest_get_field_with_default('payment_url', '#');
 	$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
 	$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
+	
+	// Section "Pourquoi choisir" - Champs ACF avec valeurs par défaut
+	$pourquoi_choisir_titre = urbanquest_get_field_with_default('pourquoi_choisir_titre', 'Pourquoi choisir Urban Quest à [ville] ?');
+	$pourquoi_choisir_titre = str_replace('[ville]', $ville_name, $pourquoi_choisir_titre);
+	
+	// Galerie d'images (champs image multiples pour ACF gratuit)
+	$pourquoi_choisir_images = array();
+	for ($i = 1; $i <= 5; $i++) {
+		$image_field = get_field('pourquoi_choisir_image_' . $i);
+		if (!empty($image_field)) {
+			if (is_array($image_field) && isset($image_field['url'])) {
+				$pourquoi_choisir_images[] = $image_field['url'];
+			} elseif (is_numeric($image_field)) {
+				$img_url = wp_get_attachment_image_url($image_field, 'medium');
+				if ($img_url) {
+					$pourquoi_choisir_images[] = $img_url;
+				}
+			}
+		}
+	}
+	
+	$pourquoi_choisir_texte = urbanquest_get_field_with_default('pourquoi_choisir_texte', 'Un savant mélange jeu de piste, chasse au trésor et visite insolite : observation, logique, audace et stratégie vous feront grimper au classement, tout en (re)découvrant [ville] et ses lieux emblématiques.');
+	$pourquoi_choisir_texte = str_replace('[ville]', $ville_name, $pourquoi_choisir_texte);
+	
+	// Fonctionnalités avec valeurs par défaut (champs simples pour ACF gratuit)
+	$default_features = array(
+		array(
+			'icone' => 'calendar-heart',
+			'titre' => '100% libre',
+			'description' => 'Vous lancez la session quand vous voulez, où vous voulez.'
+		),
+		array(
+			'icone' => 'smartphone',
+			'titre' => 'Ultra simple',
+			'description' => 'Vos instructions de jeu par e-mail, votre smartphone… c\'est tout.'
+		),
+		array(
+			'icone' => 'swords',
+			'titre' => 'Fun & challenge',
+			'description' => 'Défis variés, énigmes malignes, score et classement.'
+		)
+	);
+	
+	$pourquoi_choisir_features = array();
+	for ($i = 1; $i <= 3; $i++) {
+		$icone = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_icone', $default_features[$i-1]['icone']);
+		$titre = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_titre', $default_features[$i-1]['titre']);
+		$description = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_description', $default_features[$i-1]['description']);
+		
+		$pourquoi_choisir_features[] = array(
+			'icone' => $icone,
+			'titre' => $titre,
+			'description' => $description
+		);
+	}
+	
+	// Le bouton utilise directement le bouton de paiement existant
 ?>
 		<article id="post-<?php the_ID(); ?>" <?php post_class('single-game-content'); ?>>
 			<div class="row">
@@ -306,20 +363,32 @@ do_action('hestia_before_single_post_wrapper');
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
-					<h2 style="text-align: center;">Pourquoi choisir Urban Quest à <?php echo esc_html($ville_name); ?> ?</h2>
-					<img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/10/compo-photo-nice.png'); ?>" alt="Composition photo Urban Quest - Jeu de piste à <?php echo esc_attr($ville_name); ?>" width="561" height="101" class="center aligncenter wp-image-27010 size-full" loading="lazy" />
-					<p style="text-align: center; max-width: 860px; margin: 0 auto;">Un savant mélange jeu de piste, chasse au trésor et visite insolite : observation, logique, audace et stratégie vous feront grimper au classement, tout en (re)découvrant <?php echo esc_html($ville_name); ?> et ses lieux emblématiques.</p>
+					<h2 style="text-align: center;"><?php echo esc_html($pourquoi_choisir_titre); ?></h2>
+					<?php if (!empty($pourquoi_choisir_images)) : ?>
+						<div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; margin: 30px auto; max-width: 600px;">
+							<?php foreach ($pourquoi_choisir_images as $img_url) : ?>
+								<img src="<?php echo esc_url($img_url); ?>" alt="Composition photo Urban Quest - Jeu de piste à <?php echo esc_attr($ville_name); ?>" style="width: 100px; height: 100px; object-fit: cover; border-radius: 12px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" loading="lazy" />
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+					<p style="text-align: center; max-width: 860px; margin: 0 auto;"><?php echo esc_html($pourquoi_choisir_texte); ?></p>
 
 					<div class="game-features-grid">
-						<div class="game-feature-card"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="calendar-heart"></i>
-							<strong>100% libre</strong>
-							Vous lancez la session quand vous voulez, où vous voulez.</div>
-						<div class="game-feature-card"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="smartphone"></i>
-							<strong>Ultra simple</strong>
-							Vos instructions de jeu par e-mail, votre smartphone… c'est tout.</div>
-						<div class="game-feature-card"><i style="width: 40px; height: 40px; display: inline-block;" data-lucide="swords"></i>
-							<strong>Fun &amp; challenge</strong>
-							Défis variés, énigmes malignes, score et classement.</div>
+						<?php foreach ($pourquoi_choisir_features as $feature) : 
+							$feature_icone = !empty($feature['icone']) ? $feature['icone'] : 'circle';
+							$feature_titre = !empty($feature['titre']) ? $feature['titre'] : '';
+							$feature_description = !empty($feature['description']) ? $feature['description'] : '';
+						?>
+						<div class="game-feature-card">
+							<i style="width: 40px; height: 40px; display: inline-block;" data-lucide="<?php echo esc_attr($feature_icone); ?>"></i>
+							<?php if (!empty($feature_titre)) : ?>
+								<strong><?php echo esc_html($feature_titre); ?></strong>
+							<?php endif; ?>
+							<?php if (!empty($feature_description)) : ?>
+								<?php echo esc_html($feature_description); ?>
+							<?php endif; ?>
+						</div>
+						<?php endforeach; ?>
 					</div>
 					<div style="text-align: center; margin: 18px 0 6px;">
 						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>

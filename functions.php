@@ -2008,3 +2008,380 @@ function urbanquest_render_jauge($valeur, $label = '') {
 	<?php
 	return ob_get_clean();
 }
+
+// ============================================================================
+// GÉNÉRATION DE TEXTE AVEC OPENAI POUR LES CHAMPS ACF
+// ============================================================================
+// Permet d'ajouter un bouton "Générer avec IA" sur certains champs ACF
+// qui appelle l'API OpenAI pour générer du contenu avec un prompt spécifique
+// ============================================================================
+
+/**
+ * Configuration des champs ACF qui peuvent utiliser la génération IA
+ * Format: 'field_key' => 'prompt_template'
+ * Le prompt peut contenir des variables comme {ville}, {titre}, etc.
+ */
+function urbanquest_get_ai_field_config() {
+	// Valeurs par défaut
+	$defaults = array(
+		'field_game_description_principale' => 'Tu es un expert en rédaction web SEO. Écris une description principale accrocheuse et engageante pour un jeu de piste urbain appelé "{titre}" dans la ville de "{ville}". La description doit être de 150-200 mots, convaincante, mettre en avant l\'aspect ludique et l\'expérience unique. Utilise un ton enthousiaste mais professionnel. Format HTML avec paragraphes.',
+		'field_game_description_liste' => 'Écris une description courte (80-100 mots) pour un jeu de piste "{titre}" à {ville}. Description accrocheuse pour les listes de jeux, mettant en avant les points forts.',
+		'field_city_description_terrain_de_jeu' => 'Écris une description engageante (150-200 mots) expliquant comment {ville} devient un terrain de jeu avec Urban Quest. Mettez en avant l\'aspect exploration, découverte et expérience immersive. Format HTML avec paragraphes.',
+		'field_city_description_jeu_unique' => 'Écris une description (150-200 mots) expliquant pourquoi Urban Quest est un jeu de piste unique à {ville}. Mettez en avant l\'aspect culturel, historique et ludique. Format HTML avec paragraphes.',
+		'field_690e2db6eb47d' => 'Écris une description de région (150-200 mots) pour {titre}. Mettez en avant les caractéristiques géographiques, culturelles et touristiques de la région. Format HTML avec paragraphes.',
+		'field_690e2db6eb47d_dept' => 'Écris une description de département (150-200 mots) pour {titre}. Mettez en avant les caractéristiques géographiques et culturelles du département. Format HTML avec paragraphes.',
+	);
+	
+	// Récupérer les prompts sauvegardés depuis les options
+	$saved_prompts = get_option('urbanquest_ai_prompts', array());
+	
+	// Fusionner avec les valeurs par défaut (les valeurs sauvegardées écrasent les défauts)
+	$config = array();
+	foreach ($defaults as $field_key => $default_prompt) {
+		$config[$field_key] = isset($saved_prompts[$field_key]) && !empty($saved_prompts[$field_key]) 
+			? $saved_prompts[$field_key] 
+			: $default_prompt;
+	}
+	
+	return $config;
+}
+
+/**
+ * Ajouter la page de réglages pour OpenAI
+ */
+function urbanquest_add_openai_settings_page() {
+	add_options_page(
+		'Génération IA OpenAI',
+		'Génération IA',
+		'manage_options',
+		'urbanquest-openai-settings',
+		'urbanquest_openai_settings_page'
+	);
+}
+add_action('admin_menu', 'urbanquest_add_openai_settings_page');
+
+/**
+ * Afficher la page de réglages OpenAI
+ */
+function urbanquest_openai_settings_page() {
+	// Traitement de la sauvegarde
+	if (isset($_POST['urbanquest_save_settings']) && check_admin_referer('urbanquest_openai_settings')) {
+		// Sauvegarder la clé API
+		if (isset($_POST['urbanquest_openai_api_key'])) {
+			update_option('urbanquest_openai_api_key', sanitize_text_field($_POST['urbanquest_openai_api_key']));
+		}
+		
+		// Sauvegarder les prompts
+		if (isset($_POST['urbanquest_ai_prompts']) && is_array($_POST['urbanquest_ai_prompts'])) {
+			$prompts = array();
+			foreach ($_POST['urbanquest_ai_prompts'] as $field_key => $prompt) {
+				$prompts[sanitize_text_field($field_key)] = wp_kses_post($prompt);
+			}
+			update_option('urbanquest_ai_prompts', $prompts);
+		}
+		
+		echo '<div class="notice notice-success"><p>Paramètres enregistrés avec succès.</p></div>';
+	}
+	
+	$api_key = get_option('urbanquest_openai_api_key', '');
+	$field_config = urbanquest_get_ai_field_config();
+	
+	// Labels lisibles pour les champs
+	$field_labels = array(
+		'field_game_description_principale' => 'Description principale du jeu',
+		'field_game_description_liste' => 'Description liste du jeu',
+		'field_city_description_terrain_de_jeu' => 'Description terrain de jeu (ville)',
+		'field_city_description_jeu_unique' => 'Description jeu unique (ville)',
+		'field_690e2db6eb47d' => 'Description région',
+		'field_690e2db6eb47d_dept' => 'Description département',
+	);
+	?>
+	<div class="wrap">
+		<h1>Génération IA avec OpenAI</h1>
+		
+		<form method="post" action="">
+			<?php wp_nonce_field('urbanquest_openai_settings'); ?>
+			
+			<h2>Configuration API</h2>
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<label for="urbanquest_openai_api_key">Clé API OpenAI</label>
+					</th>
+					<td>
+						<input type="password" id="urbanquest_openai_api_key" name="urbanquest_openai_api_key" value="<?php echo esc_attr($api_key); ?>" class="regular-text" />
+						<p class="description">Votre clé API OpenAI. Vous pouvez la créer sur <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></p>
+					</td>
+				</tr>
+			</table>
+			
+			<h2>Prompts de génération</h2>
+			<p class="description">Modifiez les prompts utilisés pour générer le texte. Vous pouvez utiliser les variables suivantes : <code>{titre}</code>, <code>{ville}</code>, <code>{region}</code></p>
+			
+			<?php foreach ($field_config as $field_key => $prompt) : ?>
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<label for="prompt_<?php echo esc_attr($field_key); ?>">
+							<?php echo esc_html(isset($field_labels[$field_key]) ? $field_labels[$field_key] : $field_key); ?>
+						</label>
+						<p><code style="font-size: 11px;"><?php echo esc_html($field_key); ?></code></p>
+					</th>
+					<td>
+						<textarea 
+							id="prompt_<?php echo esc_attr($field_key); ?>" 
+							name="urbanquest_ai_prompts[<?php echo esc_attr($field_key); ?>]" 
+							rows="4" 
+							class="large-text code"
+							style="font-family: monospace; font-size: 13px;"
+						><?php echo esc_textarea($prompt); ?></textarea>
+					</td>
+				</tr>
+			</table>
+			<?php endforeach; ?>
+			
+			<?php submit_button('Enregistrer les modifications', 'primary', 'urbanquest_save_settings'); ?>
+		</form>
+	</div>
+	<?php
+}
+
+/**
+ * Endpoint AJAX pour générer du texte avec OpenAI
+ */
+function urbanquest_generate_text_with_openai() {
+	// Vérifier les permissions
+	if (!current_user_can('edit_posts')) {
+		wp_send_json_error(array('message' => 'Permissions insuffisantes'));
+		return;
+	}
+	
+	// Vérifier le nonce
+	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'urbanquest_ai_generate')) {
+		wp_send_json_error(array('message' => 'Nonce invalide'));
+		return;
+	}
+	
+	// Récupérer les paramètres
+	$field_key = isset($_POST['field_key']) ? sanitize_text_field($_POST['field_key']) : '';
+	$post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+	
+	if (empty($field_key) || empty($post_id)) {
+		wp_send_json_error(array('message' => 'Paramètres manquants'));
+		return;
+	}
+	
+	// Récupérer la clé API
+	$api_key = get_option('urbanquest_openai_api_key', '');
+	if (empty($api_key)) {
+		wp_send_json_error(array('message' => 'Clé API OpenAI non configurée. Allez dans Réglages > Génération IA pour la configurer.'));
+		return;
+	}
+	
+	// Récupérer la configuration du champ
+	$field_config = urbanquest_get_ai_field_config();
+	if (!isset($field_config[$field_key])) {
+		wp_send_json_error(array('message' => 'Champ non configuré pour la génération IA'));
+		return;
+	}
+	
+	$prompt_template = $field_config[$field_key];
+	
+	// Récupérer les données du post pour remplacer les variables
+	$post = get_post($post_id);
+	if (!$post) {
+		wp_send_json_error(array('message' => 'Post introuvable'));
+		return;
+	}
+	
+	$titre = $post->post_title;
+	$ville = '';
+	$region = '';
+	
+	// Récupérer la ville selon le type de post
+	if ($post->post_type === 'game') {
+		$city_post = get_field('city', $post_id);
+		$ville_id = urbanquest_extract_acf_relationship_id($city_post);
+		if ($ville_id) {
+			$ville = get_the_title($ville_id);
+			
+			// Récupérer aussi la région via la hiérarchie
+			$departement_post = get_field('ville', $ville_id);
+			$departement_id = urbanquest_extract_acf_relationship_id($departement_post);
+			if ($departement_id) {
+				$region_post = get_field('region', $departement_id);
+				$region_id = urbanquest_extract_acf_relationship_id($region_post);
+				if ($region_id) {
+					$region = get_the_title($region_id);
+				}
+			}
+		}
+	} elseif ($post->post_type === 'ville') {
+		$ville = $titre;
+		$departement_post = get_field('ville', $post_id);
+		$departement_id = urbanquest_extract_acf_relationship_id($departement_post);
+		if ($departement_id) {
+			$region_post = get_field('region', $departement_id);
+			$region_id = urbanquest_extract_acf_relationship_id($region_post);
+			if ($region_id) {
+				$region = get_the_title($region_id);
+			}
+		}
+	} elseif ($post->post_type === 'region') {
+		$region = $titre;
+	} elseif ($post->post_type === 'departement') {
+		$region_post = get_field('region', $post_id);
+		$region_id = urbanquest_extract_acf_relationship_id($region_post);
+		if ($region_id) {
+			$region = get_the_title($region_id);
+		}
+	}
+	
+	// Remplacer les variables dans le prompt
+	$prompt = str_replace(
+		array('{titre}', '{ville}', '{region}'),
+		array($titre, $ville, $region),
+		$prompt_template
+	);
+	
+	// Récupérer les données personnalisées
+	$custom_context = isset($_POST['custom_context']) ? sanitize_textarea_field($_POST['custom_context']) : '';
+	$custom_tone = isset($_POST['custom_tone']) ? sanitize_text_field($_POST['custom_tone']) : '';
+	$custom_length = isset($_POST['custom_length']) ? sanitize_text_field($_POST['custom_length']) : '';
+	
+	// Construire les instructions personnalisées
+	$custom_instructions = array();
+	
+	if (!empty($custom_context)) {
+		$custom_instructions[] = "Informations supplémentaires : " . $custom_context;
+	}
+	
+	if (!empty($custom_tone)) {
+		$tone_map = array(
+			'enthousiaste' => 'Utilisez un ton enthousiaste et dynamique.',
+			'professionnel' => 'Utilisez un ton professionnel et sérieux.',
+			'décontracté' => 'Utilisez un ton décontracté et familier.',
+			'formel' => 'Utilisez un ton formel et respectueux.',
+			'amical' => 'Utilisez un ton amical et chaleureux.'
+		);
+		if (isset($tone_map[$custom_tone])) {
+			$custom_instructions[] = $tone_map[$custom_tone];
+		}
+	}
+	
+	if (!empty($custom_length)) {
+		$length_map = array(
+			'court' => 'Le texte doit faire entre 50 et 100 mots.',
+			'moyen' => 'Le texte doit faire entre 100 et 200 mots.',
+			'long' => 'Le texte doit faire entre 200 et 300 mots.'
+		);
+		if (isset($length_map[$custom_length])) {
+			$custom_instructions[] = $length_map[$custom_length];
+		}
+	}
+	
+	// Ajouter les instructions personnalisées au prompt
+	if (!empty($custom_instructions)) {
+		$prompt .= "\n\n" . implode("\n", $custom_instructions);
+	}
+	
+	// Appeler l'API OpenAI
+	$response = wp_remote_post('https://api.openai.com/v1/chat/completions', array(
+		'headers' => array(
+			'Authorization' => 'Bearer ' . $api_key,
+			'Content-Type' => 'application/json',
+		),
+		'body' => json_encode(array(
+			'model' => 'gpt-4o-mini',
+		'messages' => array(
+			array(
+				'role' => 'system',
+				'content' => 'Tu es un expert en rédaction web SEO et marketing digital. IMPORTANT: Retourne uniquement le texte demandé, sans balises markdown, sans ```html, sans ```, sans formatage de code. Retourne directement le contenu HTML/text brut.'
+			),
+			array(
+				'role' => 'user',
+				'content' => $prompt . "\n\nIMPORTANT: Retourne uniquement le texte, sans balises markdown (pas de ```html ou ```). Retourne directement le contenu."
+			)
+		),
+			'temperature' => 0.7,
+			'max_tokens' => 1000,
+		)),
+		'timeout' => 30,
+	));
+	
+	if (is_wp_error($response)) {
+		wp_send_json_error(array('message' => 'Erreur lors de l\'appel à OpenAI: ' . $response->get_error_message()));
+		return;
+	}
+	
+	$body = wp_remote_retrieve_body($response);
+	$data = json_decode($body, true);
+	
+	if (isset($data['error'])) {
+		wp_send_json_error(array('message' => 'Erreur OpenAI: ' . $data['error']['message']));
+		return;
+	}
+	
+	if (!isset($data['choices'][0]['message']['content'])) {
+		wp_send_json_error(array('message' => 'Réponse OpenAI invalide'));
+		return;
+	}
+	
+	$generated_text = $data['choices'][0]['message']['content'];
+	
+	// Nettoyer le texte : retirer les balises markdown de code (```html, ```, etc.)
+	$generated_text = preg_replace('/^```[a-z]*\s*\n?/i', '', $generated_text); // Retirer ```html ou ``` au début
+	$generated_text = preg_replace('/\n?```\s*$/i', '', $generated_text); // Retirer ``` à la fin
+	$generated_text = trim($generated_text);
+	
+	// Retirer aussi les balises markdown de code qui pourraient être au milieu
+	$generated_text = preg_replace('/```[a-z]*\s*\n?/i', '', $generated_text);
+	$generated_text = preg_replace('/\n?```\s*/i', '', $generated_text);
+	
+	wp_send_json_success(array('text' => $generated_text));
+}
+add_action('wp_ajax_urbanquest_generate_text', 'urbanquest_generate_text_with_openai');
+
+/**
+ * Enqueue les scripts et styles pour les boutons IA dans ACF
+ */
+function urbanquest_enqueue_acf_ai_scripts($hook) {
+	// Ne charger que sur les pages d'édition de posts
+	if (!in_array($hook, array('post.php', 'post-new.php'))) {
+		return;
+	}
+	
+	// Vérifier que ACF est actif
+	if (!function_exists('get_field')) {
+		return;
+	}
+	
+	wp_enqueue_script(
+		'urbanquest-acf-ai',
+		get_stylesheet_directory_uri() . '/js/acf-ai-generate.js',
+		array('jquery', 'acf-input'),
+		'1.2.0', // Version mise à jour pour forcer le rechargement
+		true
+	);
+	
+	wp_enqueue_style(
+		'urbanquest-acf-ai',
+		get_stylesheet_directory_uri() . '/css/acf-ai-generate.css',
+		array(),
+		'1.2.0' // Version mise à jour pour forcer le rechargement
+	);
+	
+	// Passer les données au JavaScript
+	wp_localize_script('urbanquest-acf-ai', 'urbanquestAI', array(
+		'ajaxUrl' => admin_url('admin-ajax.php'),
+		'nonce' => wp_create_nonce('urbanquest_ai_generate'),
+		'fieldConfig' => urbanquest_get_ai_field_config(),
+		'i18n' => array(
+			'generate' => 'Générer avec IA',
+			'generating' => 'Génération en cours...',
+			'error' => 'Erreur lors de la génération',
+			'success' => 'Texte généré avec succès',
+		),
+	));
+}
+add_action('admin_enqueue_scripts', 'urbanquest_enqueue_acf_ai_scripts');
