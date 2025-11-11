@@ -6,6 +6,168 @@
  * @since Hestia 1.0
  */
 
+// Préparer les données SEO avant get_header()
+if (have_posts()) {
+	the_post();
+	$ville_id = get_the_ID();
+	$ville_name_raw = get_the_title();
+	
+	// Titre SEO par défaut si vide - Optimisé avec "jeu de piste"
+	if (empty($ville_name_raw)) {
+		$ville_name = 'Bordeaux';
+		$ville_title_seo = 'Jeu de piste à ' . esc_html($ville_name) . ' | Urban Quest - Aventure connectée';
+	} else {
+		$ville_name = $ville_name_raw;
+		$ville_title_seo = 'Jeu de piste à ' . esc_html($ville_name) . ' | Urban Quest - Aventure connectée';
+	}
+	
+	// Description SEO
+	$ville_description = get_the_content();
+	if (empty($ville_description)) {
+		$description_section_terrain_de_jeu = get_field('description_section_terrain_de_jeu');
+		if (!empty($description_section_terrain_de_jeu)) {
+			$ville_description = wp_strip_all_tags($description_section_terrain_de_jeu);
+		} else {
+			$ville_description = "Découvrez les meilleurs jeux de piste connectés Urban Quest à " . esc_html($ville_name) . ". Ce jeu de piste innovant vous permet d'explorer la ville autrement en résolvant des énigmes passionnantes. Urban Quest vous propose des aventures de jeu de piste adaptées à tous les âges, à faire en famille ou entre amis.";
+		}
+	}
+	
+	// Meta description SEO (limité à 160 caractères)
+	$ville_meta_description = wp_strip_all_tags($ville_description);
+	if (strlen($ville_meta_description) > 160) {
+		$ville_meta_description = substr($ville_meta_description, 0, 157) . '...';
+	}
+	
+	// Image pour Open Graph (1200x630px recommandé)
+	$ville_image_url = get_the_post_thumbnail_url($ville_id, 'large');
+	if (empty($ville_image_url)) {
+		$image_section_terrain_de_jeu = get_field('image_section_terrain_de_jeu');
+		if ($image_section_terrain_de_jeu) {
+			if (is_array($image_section_terrain_de_jeu) && isset($image_section_terrain_de_jeu['url'])) {
+				$ville_image_url = $image_section_terrain_de_jeu['url'];
+			} elseif (is_string($image_section_terrain_de_jeu)) {
+				$ville_image_url = $image_section_terrain_de_jeu;
+			} elseif (is_numeric($image_section_terrain_de_jeu)) {
+				$ville_image_url = wp_get_attachment_image_url($image_section_terrain_de_jeu, 'large');
+			}
+		}
+	}
+	if (empty($ville_image_url)) {
+		$ville_image_url = get_site_url() . '/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
+	}
+	
+	// Modifier le title via le filtre WordPress (meilleure pratique)
+	add_filter('document_title_parts', function($title) use ($ville_title_seo) {
+		$title['title'] = $ville_title_seo;
+		return $title;
+	}, 10);
+	
+	// Ajouter les balises meta SEO dans le head
+	add_action('wp_head', function() use ($ville_title_seo, $ville_meta_description, $ville_image_url) {
+		// Meta description
+		echo '<meta name="description" content="' . esc_attr($ville_meta_description) . '" />' . "\n";
+		
+		// Open Graph
+		echo '<meta property="og:title" content="' . esc_attr($ville_title_seo) . '" />' . "\n";
+		echo '<meta property="og:description" content="' . esc_attr($ville_meta_description) . '" />' . "\n";
+		echo '<meta property="og:image" content="' . esc_url($ville_image_url) . '" />' . "\n";
+		echo '<meta property="og:type" content="website" />' . "\n";
+		echo '<meta property="og:url" content="' . esc_url(get_permalink()) . '" />' . "\n";
+		echo '<meta property="og:site_name" content="Urban Quest" />' . "\n";
+		echo '<meta property="og:locale" content="fr_FR" />' . "\n";
+		
+		// Twitter Cards
+		echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
+		echo '<meta name="twitter:title" content="' . esc_attr($ville_title_seo) . '" />' . "\n";
+		echo '<meta name="twitter:description" content="' . esc_attr($ville_meta_description) . '" />' . "\n";
+		echo '<meta name="twitter:image" content="' . esc_url($ville_image_url) . '" />' . "\n";
+		
+		// Canonical
+		echo '<link rel="canonical" href="' . esc_url(get_permalink()) . '" />' . "\n";
+		
+		// Robots
+		echo '<meta name="robots" content="index, follow" />' . "\n";
+	}, 1);
+	
+	// Ajouter le schéma JSON-LD CollectionPage/ItemList
+	add_action('wp_head', function() use ($ville_name, $ville_meta_description, $ville_image_url, $ville_id) {
+		// Récupérer les jeux pour le schéma ItemList
+		$games = array();
+		
+		try {
+			$all_games = get_posts(array(
+				'post_type' => 'game',
+				'posts_per_page' => 20, // Limiter pour le schéma
+				'post_status' => 'publish',
+				'suppress_filters' => false
+			));
+			
+			foreach ($all_games as $game) {
+				$city_field = get_field('city', $game->ID);
+				$city_id = is_object($city_field) && isset($city_field->ID) ? $city_field->ID : (is_numeric($city_field) ? $city_field : null);
+				
+				if ($city_id == $ville_id) {
+					$games[] = $game;
+				}
+			}
+		} catch (Exception $e) {
+			$games = array();
+		}
+		
+		// Schéma CollectionPage avec ItemList
+		$schema = array(
+			'@context' => 'https://schema.org',
+			'@type' => 'CollectionPage',
+			'name' => 'Jeu de piste Urban Quest à ' . esc_html($ville_name) . ' - Aventure connectée',
+			'description' => $ville_meta_description,
+			'url' => get_permalink(),
+			'image' => $ville_image_url,
+			'about' => array(
+				'@type' => 'City',
+				'name' => $ville_name
+			),
+			'publisher' => array(
+				'@type' => 'Organization',
+				'name' => 'Urban Quest',
+				'url' => get_site_url()
+			)
+		);
+		
+		// Ajouter ItemList si des jeux sont disponibles
+		if (!empty($games)) {
+			$items = array();
+			foreach ($games as $index => $game) {
+				$game_url = get_permalink($game->ID);
+				$game_title = get_the_title($game->ID);
+				$game_image = get_the_post_thumbnail_url($game->ID, 'medium');
+				
+				$items[] = array(
+					'@type' => 'ListItem',
+					'position' => $index + 1,
+					'item' => array(
+						'@type' => 'Product',
+						'name' => $game_title,
+						'url' => $game_url,
+						'image' => $game_image ?: $ville_image_url
+					)
+				);
+			}
+			
+			$schema['mainEntity'] = array(
+				'@type' => 'ItemList',
+				'numberOfItems' => count($games),
+				'itemListElement' => $items
+			);
+		}
+		
+		echo '<script type="application/ld+json">' . "\n";
+		echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+		echo "\n" . '</script>' . "\n";
+	}, 99);
+	
+	rewind_posts();
+}
+
 get_header();
 ?>
 
@@ -60,23 +222,35 @@ do_action( 'hestia_before_single_post_wrapper' );
 	function get_game_display_data($game) {
 		$game_id = is_object($game) ? $game->ID : $game;
 		
-		// Image : utilise image_liste ACF, sinon thumbnail, sinon image par défaut
-		$image_liste = get_field('image_liste', $game_id);
+		// Image : utilise image_principale ACF, sinon image_liste, sinon thumbnail, sinon image par défaut
+		$image_principale = get_field('image_principale', $game_id);
 		$game_image = '';
-		if ($image_liste) {
-			if (is_array($image_liste) && isset($image_liste['url'])) {
-				$game_image = $image_liste['url'];
-			} elseif (is_string($image_liste)) {
-				$game_image = $image_liste;
-			} elseif (is_numeric($image_liste)) {
-				$game_image = wp_get_attachment_image_url($image_liste, 'medium');
+		if ($image_principale) {
+			if (is_array($image_principale) && isset($image_principale['url'])) {
+				$game_image = $image_principale['url'];
+			} elseif (is_string($image_principale)) {
+				$game_image = $image_principale;
+			} elseif (is_numeric($image_principale)) {
+				$game_image = wp_get_attachment_image_url($image_principale, 'medium');
+			}
+		}
+		if (empty($game_image)) {
+			$image_liste = get_field('image_liste', $game_id);
+			if ($image_liste) {
+				if (is_array($image_liste) && isset($image_liste['url'])) {
+					$game_image = $image_liste['url'];
+				} elseif (is_string($image_liste)) {
+					$game_image = $image_liste;
+				} elseif (is_numeric($image_liste)) {
+					$game_image = wp_get_attachment_image_url($image_liste, 'medium');
+				}
 			}
 		}
 		if (empty($game_image)) {
 			$game_image = get_the_post_thumbnail_url($game_id, 'medium');
 		}
 		if (empty($game_image)) {
-			$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
+			$game_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
 		}
 		
 		// Titre : utilise titre_liste ACF, sinon post_title
@@ -128,7 +302,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 	}
 	// Image par défaut si vide
 	if (empty($image_section_terrain_de_jeu_url)) {
-		$image_section_terrain_de_jeu_url = 'https://urbanquest.fr/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
+		$image_section_terrain_de_jeu_url = get_site_url() . '/wp-content/uploads/2025/09/ville-photos-uq-1024x190.png';
 	}
 	
 	$description_section_terrain_de_jeu = get_field('description_section_terrain_de_jeu');
@@ -192,7 +366,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
 							
 							<div>
-								<img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?>" width="750" height="139" class="aligncenter size-large wp-image-26967" />
+								<img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" loading="lazy" />
 							</div>
 							
 							<?php echo wp_kses_post($description_section_terrain_de_jeu); ?>
@@ -201,7 +375,15 @@ do_action( 'hestia_before_single_post_wrapper' );
 							
 							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_jeu_unique); ?></h3>
 							
-							<?php echo wp_kses_post($description_section_jeu_unique); ?>
+							<?php 
+							// Optimiser la description avec "jeu de piste" si pas déjà présent
+							$description_optimized = $description_section_jeu_unique;
+							if (stripos($description_optimized, 'jeu de piste') === false && stripos($description_optimized, 'jeux de piste') === false) {
+								$description_optimized = str_replace('[ville]', $ville_name, $description_optimized);
+								$description_optimized = '<p style="margin: 10px 0;">Ce jeu de piste connecté vous permet de découvrir ' . esc_html($ville_name) . ' de manière ludique et interactive.</p>' . $description_optimized;
+							}
+							echo wp_kses_post($description_optimized); 
+							?>
 							
 						</div>
 					</div>
@@ -210,7 +392,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					
 					<!-- Liste des jeux de la ville -->
 					<?php if (!empty($games)) : ?>
-						<h2 style="text-align: center; margin-bottom: 40px;">Les jeux de piste à <?php echo esc_html($ville_name); ?></h2>
+						<h2 style="text-align: center; margin-bottom: 40px;">Jeu de piste à <?php echo esc_html($ville_name); ?> - Nos aventures</h2>
 						<div class="row" style="margin-bottom: 60px;">
 							<?php foreach ($games as $game) : 
 								$game_data = get_game_display_data($game);
@@ -218,7 +400,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 							<div class="col-md-4" style="margin-bottom: 30px;">
 								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 									<a href="<?php echo esc_url(get_permalink($game->ID)); ?>" style="text-decoration: none; color: inherit; display: block;">
-										<img src="<?php echo esc_url($game_data['image']); ?>" alt="<?php echo esc_attr($game_data['title']); ?>" style="width: 100%; height: 200px; object-fit: cover;" />
+										<img src="<?php echo esc_url($game_data['image']); ?>" alt="Jeu de piste connecté Urban Quest - <?php echo esc_attr($game_data['title']); ?> à <?php echo esc_attr($ville_name); ?>" style="width: 100%; height: 200px; object-fit: cover;" loading="lazy" />
 										<div style="padding: 20px;">
 											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37;"><?php echo esc_html($game_data['title']); ?></h3>
 											<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5;"><?php echo esc_html(wp_trim_words($game_data['excerpt'], 20)); ?></p>
@@ -236,14 +418,14 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<?php else : ?>
 						<!-- Message SEO-friendly si aucun jeu -->
 						<div style="text-align: center; padding: 60px 20px; background: #F7F9FC; border-radius: 12px; margin-bottom: 60px;">
-							<h2 style="margin-bottom: 20px; color: #1f2a37;">Jeux de piste à <?php echo esc_html($ville_name); ?> - Bientôt disponible</h2>
+							<h2 style="margin-bottom: 20px; color: #1f2a37;">Jeu de piste à <?php echo esc_html($ville_name); ?> - Bientôt disponible</h2>
 							<p style="font-size: 18px; color: #6b7280; line-height: 1.6; max-width: 800px; margin: 0 auto 30px;">
-								Urban Quest prépare actuellement des jeux de piste connectés pour découvrir <?php echo esc_html($ville_name); ?> autrement. 
-								Nos game designers travaillent sur des parcours uniques qui vous permettront d'explorer les lieux emblématiques de la ville tout en résolvant des énigmes passionnantes.
+								Urban Quest prépare actuellement un jeu de piste connecté pour découvrir <?php echo esc_html($ville_name); ?> autrement. 
+								Ce jeu de piste innovant vous permettra d'explorer les lieux emblématiques de la ville tout en résolvant des énigmes passionnantes. Nos game designers travaillent sur des parcours uniques pour vous offrir une expérience de jeu de piste mémorable.
 							</p>
 							<p style="font-size: 16px; color: #6b7280; line-height: 1.6; max-width: 800px; margin: 0 auto 30px;">
-								Si vous souhaitez être informé dès que les jeux seront disponibles à <?php echo esc_html($ville_name); ?>, 
-								<a href="https://urbanquest.fr/contact/" style="color: #00bbff; text-decoration: underline;">contactez-nous</a> ou 
+								Si vous souhaitez être informé dès que ce jeu de piste sera disponible à <?php echo esc_html($ville_name); ?>, 
+								<a href="<?php echo esc_url(get_site_url() . '/contact/'); ?>" style="color: #00bbff; text-decoration: underline;">contactez-nous</a> ou 
 								suivez-nous sur nos réseaux sociaux pour rester informé de nos nouveautés.
 							</p>
 							<p style="font-size: 16px; color: #6b7280; line-height: 1.6; max-width: 800px; margin: 0 auto;">

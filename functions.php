@@ -48,7 +48,22 @@ add_action( 'wp_enqueue_scripts', 'urbanquest_enqueue_responsive_styles', 20 );
 // Fonctions:
 // - Supprime les métadonnées "publié par" pour les post types personnalisés (game, country, region, departement, ville)
 // - Supprime la section "Articles similaires" pour les post types personnalisés
+// - Cache l'éditeur de contenu pour les post types personnalisés
 // ============================================================================
+
+/**
+ * Cacher l'éditeur de contenu pour les post types personnalisés
+ * Les éditeurs WordPress n'ont pas besoin de l'éditeur Gutenberg/classique
+ * car tout le contenu est géré via les champs ACF
+ */
+function urbanquest_remove_editor_support() {
+	$post_types = array('game', 'country', 'region', 'departement', 'ville');
+	
+	foreach ($post_types as $post_type) {
+		remove_post_type_support($post_type, 'editor');
+	}
+}
+add_action('init', 'urbanquest_remove_editor_support', 100);
 
 // Supprimer uniquement les métadonnées "publié par" pour les post types personnalisés
 add_action('template_redirect', function() {
@@ -566,6 +581,53 @@ function urbanquest_wp($wp) {
 		}
 	}
 }
+
+/**
+ * Rediriger les anciennes URLs /jeu/... vers /jeux-de-piste/%ville%/...
+ * Redirection 301 pour éviter la duplication de contenu
+ */
+function urbanquest_redirect_old_game_urls() {
+	// Ne s'applique qu'aux requêtes frontend
+	if (is_admin() || wp_doing_ajax() || wp_doing_cron()) {
+		return;
+	}
+	
+	// Vérifier si c'est une URL /jeu/...
+	if (!isset($_SERVER['REQUEST_URI'])) {
+		return;
+	}
+	
+	$request_uri = $_SERVER['REQUEST_URI'];
+	$path = parse_url($request_uri, PHP_URL_PATH);
+	
+	// Vérifier si c'est une URL /jeu/slug/
+	if ($path && preg_match('#^/jeu/([^/]+)/?$#', $path, $matches)) {
+		$game_slug = $matches[1];
+		
+		// Chercher le jeu avec ce slug
+		$game = get_page_by_path($game_slug, OBJECT, 'game');
+		
+		if ($game) {
+			// Récupérer la ville associée via ACF
+			$city_post = get_field('city', $game->ID);
+			$ville_id = urbanquest_extract_acf_relationship_id($city_post);
+			
+			if ($ville_id) {
+				$ville_slug = urbanquest_get_post_slug($ville_id);
+				
+				if (!empty($ville_slug)) {
+					// Construire la nouvelle URL
+					$new_url = home_url('/jeux-de-piste/' . $ville_slug . '/' . $game_slug . '/');
+					
+					// Redirection 301 permanente
+					wp_redirect($new_url, 301);
+					exit;
+				}
+			}
+		}
+	}
+}
+add_action('template_redirect', 'urbanquest_redirect_old_game_urls', 1);
 
 /**
  * Empêcher les redirections automatiques de WordPress pour les jeux
@@ -1603,3 +1665,346 @@ function urbanquest_add_after_nav_menu() {
 }
 add_action('hestia_after_navigation', 'urbanquest_add_after_nav_menu');
 */
+
+// ============================================================================
+// SCHÉMA ORGANIZATION (SCHEMA.ORG)
+// ============================================================================
+// Ajoute le schéma Organization sur la page d'accueil et les pages contact/à propos
+// Ce schéma est requis pour le SEO et permet à Google d'identifier l'organisation
+// ============================================================================
+
+/**
+ * Ajouter le schéma JSON-LD Organization sur la page d'accueil et les pages contact/à propos
+ */
+function urbanquest_add_organization_schema() {
+	// Vérifier si on est sur la page d'accueil
+	$is_front_page = is_front_page();
+	
+	// Vérifier si on est sur une page contact ou à propos
+	$is_contact_page = false;
+	$is_about_page = false;
+	
+	if (is_page()) {
+		$page_slug = get_post_field('post_name', get_the_ID());
+		$is_contact_page = in_array(strtolower($page_slug), array('contact', 'contactez-nous', 'nous-contacter'));
+		$is_about_page = in_array(strtolower($page_slug), array('a-propos', 'about', 'qui-sommes-nous', 'a-propos-de-nous'));
+	}
+	
+	// Ajouter le schéma uniquement sur la page d'accueil ou les pages contact/à propos
+	if (!$is_front_page && !$is_contact_page && !$is_about_page) {
+		return;
+	}
+	
+	// Récupérer les informations du site
+	$site_name = get_bloginfo('name');
+	$site_url = get_site_url();
+	$site_description = get_bloginfo('description');
+	
+	// Valeurs par défaut si non définies
+	if (empty($site_name)) {
+		$site_name = 'Urban Quest';
+	}
+	
+	// Récupérer le logo du site
+	$logo_url = '';
+	
+	// Essayer de récupérer le logo personnalisé WordPress
+	$custom_logo_id = get_theme_mod('custom_logo');
+	if ($custom_logo_id) {
+		$logo_url = wp_get_attachment_image_url($custom_logo_id, 'full');
+	}
+	
+	// Si pas de logo personnalisé, essayer le logo du thème
+	if (empty($logo_url)) {
+		// Logo du thème enfant
+		$child_logo = get_stylesheet_directory_uri() . '/images/logo.png';
+		if (file_exists(get_stylesheet_directory() . '/images/logo.png')) {
+			$logo_url = $child_logo;
+		}
+	}
+	
+	// Si toujours pas de logo, utiliser l'image par défaut du site
+	if (empty($logo_url)) {
+		$logo_url = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
+	}
+	
+	// Construire le schéma Organization
+	$schema = array(
+		'@context' => 'https://schema.org',
+		'@type' => 'Organization',
+		'name' => $site_name,
+		'url' => $site_url
+	);
+	
+	// Ajouter le logo si disponible
+	if (!empty($logo_url)) {
+		$schema['logo'] = array(
+			'@type' => 'ImageObject',
+			'url' => $logo_url
+		);
+	}
+	
+	// Ajouter les réseaux sociaux si disponibles (à personnaliser selon vos besoins)
+	$same_as = array();
+	// Exemple d'ajout de réseaux sociaux :
+	// $same_as[] = 'https://www.facebook.com/urbanquest';
+	// $same_as[] = 'https://www.instagram.com/urbanquest';
+	// $same_as[] = 'https://twitter.com/urbanquest';
+	
+	if (!empty($same_as)) {
+		$schema['sameAs'] = $same_as;
+	}
+	
+	// Ajouter la description si disponible
+	if (!empty($site_description)) {
+		$schema['description'] = $site_description;
+	} else {
+		$schema['description'] = 'Urban Quest propose des jeux de piste connectés pour explorer les villes autrement. Découvrez nos aventures ludiques et interactives en famille ou entre amis.';
+	}
+	
+	// Ajouter les informations de contact si disponibles (optionnel mais recommandé)
+	// Vous pouvez récupérer ces informations depuis des options WordPress ou des champs ACF
+	$contact_email = get_option('admin_email'); // Email par défaut de WordPress
+	$contact_phone = ''; // À remplir si vous avez un numéro de téléphone
+	
+	if (!empty($contact_email)) {
+		$schema['email'] = $contact_email;
+	}
+	
+	if (!empty($contact_phone)) {
+		$schema['telephone'] = $contact_phone;
+	}
+	
+	// Ajouter l'adresse si disponible (optionnel mais recommandé pour le SEO local)
+	// Exemple de structure d'adresse :
+	/*
+	$schema['address'] = array(
+		'@type' => 'PostalAddress',
+		'streetAddress' => '123 Rue de la Ville',
+		'addressLocality' => 'Bordeaux',
+		'postalCode' => '33000',
+		'addressCountry' => 'FR'
+	);
+	*/
+	
+	// Ajouter le schéma dans le head
+	echo '<script type="application/ld+json">' . "\n";
+	echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+	echo "\n" . '</script>' . "\n";
+}
+add_action('wp_head', 'urbanquest_add_organization_schema', 5);
+
+// ============================================================================
+// FONCTIONS HELPER POUR OPTIMISATION DES TEMPLATES
+// ============================================================================
+
+/**
+ * Récupère un champ ACF avec valeur par défaut
+ * @param string $field_name Nom du champ ACF
+ * @param mixed $default Valeur par défaut
+ * @param int|null $post_id ID du post (optionnel)
+ * @return mixed Valeur du champ ou valeur par défaut
+ */
+function urbanquest_get_field_with_default($field_name, $default = '', $post_id = null) {
+	$value = get_field($field_name, $post_id);
+	return !empty($value) ? $value : $default;
+}
+
+/**
+ * Extrait l'URL d'une image depuis un champ ACF
+ * @param mixed $image_field Champ ACF image (peut être array, string ou ID)
+ * @param string $size Taille d'image WordPress (default: 'full')
+ * @param string $default_url URL par défaut si aucune image trouvée
+ * @return string URL de l'image
+ */
+function urbanquest_get_image_url($image_field, $size = 'full', $default_url = '') {
+	if (!$image_field) {
+		return $default_url;
+	}
+	
+	if (is_array($image_field) && isset($image_field['url'])) {
+		return $image_field['url'];
+	}
+	
+	if (is_string($image_field)) {
+		return $image_field;
+	}
+	
+	if (is_numeric($image_field)) {
+		$url = wp_get_attachment_image_url($image_field, $size);
+		return $url ? $url : $default_url;
+	}
+	
+	return $default_url;
+}
+
+/**
+ * Récupère les données de ville/département/région depuis un jeu
+ * @param int $game_id ID du jeu
+ * @return array ['ville_id', 'ville_name', 'departement_id', 'region_id', 'region_name']
+ */
+function urbanquest_get_game_location_data($game_id) {
+	$city_post = get_field('city', $game_id);
+	$ville_id = urbanquest_extract_acf_relationship_id($city_post);
+	$ville_name = $ville_id ? get_the_title($ville_id) : '';
+	
+	$departement_id = null;
+	$region_id = null;
+	$region_name = '';
+	
+	if ($ville_id) {
+		$departement_post = get_field('ville', $ville_id);
+		$departement_id = urbanquest_extract_acf_relationship_id($departement_post);
+		
+		if ($departement_id) {
+			$region_post = get_field('region', $departement_id);
+			$region_id = urbanquest_extract_acf_relationship_id($region_post);
+			
+			if ($region_id) {
+				$region_obj = get_post($region_id);
+				$region_name = $region_obj ? $region_obj->post_title : '';
+			}
+		}
+	}
+	
+	return compact('ville_id', 'ville_name', 'departement_id', 'region_id', 'region_name');
+}
+
+/**
+ * Récupère les données d'affichage d'un jeu
+ * @param WP_Post|int $game Le post du jeu ou son ID
+ * @return array ['image', 'title', 'excerpt', 'payment_url', 'city_name']
+ */
+function urbanquest_get_game_display_data($game) {
+	$game_id = is_object($game) ? $game->ID : $game;
+	$default_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
+	
+	// Image avec fallback
+	$image = urbanquest_get_image_url(get_field('image_principale', $game_id), 'medium', '');
+	if (empty($image)) {
+		$image = urbanquest_get_image_url(get_field('image_liste', $game_id), 'medium', '');
+	}
+	if (empty($image)) {
+		$image = get_the_post_thumbnail_url($game_id, 'medium') ?: $default_image;
+	}
+	
+	// Titre
+	$title = urbanquest_get_field_with_default('titre_liste', get_the_title($game_id), $game_id);
+	
+	// Description
+	$excerpt = urbanquest_get_field_with_default('description_liste', get_the_excerpt($game_id), $game_id);
+	if (empty($excerpt)) {
+		$excerpt = 'Découvrez ce jeu de piste unique dans cette ville.';
+	}
+	
+	// Payment URL
+	$payment_url = urbanquest_get_field_with_default('payment_url', get_permalink($game_id), $game_id);
+	
+	// Ville
+	$city_field = get_field('city', $game_id);
+	$city_id = urbanquest_extract_acf_relationship_id($city_field);
+	$city_name = $city_id ? get_the_title($city_id) : '';
+	
+	return compact('image', 'title', 'excerpt', 'payment_url', 'city_name');
+}
+
+/**
+ * Récupère les jeux pertinents selon la hiérarchie géographique
+ * @param int $current_game_id ID du jeu actuel
+ * @param int $ville_id ID de la ville
+ * @param int $departement_id ID du département
+ * @param int $region_id ID de la région
+ * @param int $limit Nombre maximum de jeux (défaut: 6)
+ * @return array Tableau de jeux WP_Post
+ */
+function urbanquest_get_related_games($current_game_id, $ville_id, $departement_id, $region_id, $limit = 6) {
+	$related_games = [];
+	$excluded_ids = [$current_game_id];
+	
+	// 1. Jeux de la même ville
+	if ($ville_id) {
+		$all_games = get_posts(['post_type' => 'game', 'posts_per_page' => -1, 'post__not_in' => $excluded_ids]);
+		foreach ($all_games as $game) {
+			$city_id = urbanquest_extract_acf_relationship_id(get_field('city', $game->ID));
+			if ($city_id == $ville_id) {
+				$related_games[] = $game;
+				$excluded_ids[] = $game->ID;
+				if (count($related_games) >= $limit) return $related_games;
+			}
+		}
+	}
+	
+	// 2. Jeux du même département
+	if (count($related_games) < $limit && $departement_id) {
+		$villes_departement = [];
+		foreach (get_posts(['post_type' => 'ville', 'posts_per_page' => -1]) as $ville) {
+			if (urbanquest_extract_acf_relationship_id(get_field('ville', $ville->ID)) == $departement_id) {
+				$villes_departement[] = $ville->ID;
+			}
+		}
+		
+		if (!empty($villes_departement)) {
+			foreach (get_posts(['post_type' => 'game', 'posts_per_page' => -1, 'post__not_in' => $excluded_ids]) as $game) {
+				$city_id = urbanquest_extract_acf_relationship_id(get_field('city', $game->ID));
+				if ($city_id && in_array($city_id, $villes_departement)) {
+					$related_games[] = $game;
+					$excluded_ids[] = $game->ID;
+					if (count($related_games) >= $limit) return $related_games;
+				}
+			}
+		}
+	}
+	
+	// 3. Jeux de la même région
+	if (count($related_games) < $limit && $region_id) {
+		$departements_region = [];
+		foreach (get_posts(['post_type' => 'departement', 'posts_per_page' => -1]) as $dep) {
+			if (urbanquest_extract_acf_relationship_id(get_field('region', $dep->ID)) == $region_id) {
+				$departements_region[] = $dep->ID;
+			}
+		}
+		
+		$villes_region = [];
+		if (!empty($departements_region)) {
+			foreach (get_posts(['post_type' => 'ville', 'posts_per_page' => -1]) as $ville) {
+				if (in_array(urbanquest_extract_acf_relationship_id(get_field('ville', $ville->ID)), $departements_region)) {
+					$villes_region[] = $ville->ID;
+				}
+			}
+		}
+		
+		if (!empty($villes_region)) {
+			foreach (get_posts(['post_type' => 'game', 'posts_per_page' => -1, 'post__not_in' => $excluded_ids]) as $game) {
+				$city_id = urbanquest_extract_acf_relationship_id(get_field('city', $game->ID));
+				if ($city_id && in_array($city_id, $villes_region)) {
+					$related_games[] = $game;
+					if (count($related_games) >= $limit) return $related_games;
+				}
+			}
+		}
+	}
+	
+	return $related_games;
+}
+
+/**
+ * Génère le HTML d'une jauge de progression
+ * @param int $valeur Valeur entre 1 et 100
+ * @param string $label Label de la jauge (non utilisé mais gardé pour compatibilité)
+ * @return string HTML de la jauge
+ */
+function urbanquest_render_jauge($valeur, $label = '') {
+	$valeur = max(1, min(100, intval($valeur)));
+	$pourcentage = $valeur . '%';
+	
+	ob_start();
+	?>
+	<div style="position: relative; width: 100%; height: 16px;">
+		<div style="position: relative; width: 100%; height: 100%; border-radius: 10px; overflow: visible; background: white;">
+			<div style="position: absolute; top: 0; left: 0; width: <?php echo esc_attr($pourcentage); ?>; height: 100%; background: #87CEEB; border-radius: 10px; z-index: 1;"></div>
+			<div style="position: absolute; top: 0; left: <?php echo esc_attr($pourcentage); ?>; width: <?php echo esc_attr((100 - $valeur) . '%'); ?>; height: 100%; background: white; border-radius: <?php echo ($valeur <= 0) ? '10px' : '0 10px 10px 0'; ?>; z-index: 1;"></div>
+		</div>
+	</div>
+	<?php
+	return ob_get_clean();
+}

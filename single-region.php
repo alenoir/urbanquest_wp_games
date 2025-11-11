@@ -12,13 +12,13 @@ if (have_posts()) {
 	$region_id = get_the_ID();
 	$region_name_raw = get_the_title();
 	
-	// Titre SEO par défaut si vide
+	// Titre SEO par défaut si vide - Optimisé avec "jeu de piste"
 	if (empty($region_name_raw)) {
 		$region_name = 'Nouvelle-Aquitaine';
-		$region_title_seo = 'Jeux de piste Urban Quest en Nouvelle-Aquitaine - Découvrez nos aventures';
+		$region_title_seo = 'Jeu de piste en ' . esc_html($region_name) . ' | Urban Quest - Aventure connectée';
 	} else {
 		$region_name = $region_name_raw;
-		$region_title_seo = 'Jeux de piste Urban Quest en ' . esc_html($region_name) . ' - Découvrez nos aventures';
+		$region_title_seo = 'Jeu de piste en ' . esc_html($region_name) . ' | Urban Quest - Aventure connectée';
 	}
 	
 	// Valeurs par défaut pour les champs ACF avec textes SEO optimisés
@@ -27,7 +27,7 @@ if (have_posts()) {
 		$region_description = get_the_content();
 	}
 	if (empty($region_description)) {
-		$region_description = "Découvrez la région " . esc_html($region_name) . " à travers nos jeux de piste connectés Urban Quest. Notre région regorge de trésors cachés et de patrimoine à explorer. Partez à l'aventure en famille ou entre amis pour résoudre des énigmes passionnantes et vivre une expérience unique. Urban Quest vous invite à explorer les plus belles villes et sites historiques de " . esc_html($region_name) . " de manière ludique et interactive.";
+		$region_description = "Découvrez la région " . esc_html($region_name) . " à travers nos jeux de piste connectés Urban Quest. Ce jeu de piste innovant vous permet d'explorer les plus belles villes et sites historiques de " . esc_html($region_name) . " de manière ludique et interactive. Partez à l'aventure en famille ou entre amis pour résoudre des énigmes passionnantes et vivre une expérience de jeu de piste unique.";
 	}
 	
 	// Meta description SEO (limité à 160 caractères)
@@ -36,13 +36,160 @@ if (have_posts()) {
 		$region_meta_description = substr($region_meta_description, 0, 157) . '...';
 	}
 	
+	// Image pour Open Graph (1200x630px recommandé)
+	$region_image_url = get_the_post_thumbnail_url($region_id, 'large');
+	if (empty($region_image_url)) {
+		$image_region = get_field('image_region');
+		if ($image_region) {
+			if (is_array($image_region) && isset($image_region['url'])) {
+				$region_image_url = $image_region['url'];
+			} elseif (is_string($image_region)) {
+				$region_image_url = $image_region;
+			} elseif (is_numeric($image_region)) {
+				$region_image_url = wp_get_attachment_image_url($image_region, 'large');
+			}
+		}
+	}
+	if (empty($region_image_url)) {
+		$region_image_url = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
+	}
+	
+	// Modifier le title via le filtre WordPress (meilleure pratique)
+	add_filter('document_title_parts', function($title) use ($region_title_seo) {
+		$title['title'] = $region_title_seo;
+		return $title;
+	}, 10);
+	
 	// Ajouter les balises meta SEO dans le head
-	add_action('wp_head', function() use ($region_title_seo, $region_meta_description) {
+	add_action('wp_head', function() use ($region_title_seo, $region_meta_description, $region_image_url) {
+		// Meta description
 		echo '<meta name="description" content="' . esc_attr($region_meta_description) . '" />' . "\n";
+		
+		// Open Graph
 		echo '<meta property="og:title" content="' . esc_attr($region_title_seo) . '" />' . "\n";
 		echo '<meta property="og:description" content="' . esc_attr($region_meta_description) . '" />' . "\n";
-		echo '<title>' . esc_html($region_title_seo) . '</title>' . "\n";
+		echo '<meta property="og:image" content="' . esc_url($region_image_url) . '" />' . "\n";
+		echo '<meta property="og:type" content="website" />' . "\n";
+		echo '<meta property="og:url" content="' . esc_url(get_permalink()) . '" />' . "\n";
+		echo '<meta property="og:site_name" content="Urban Quest" />' . "\n";
+		echo '<meta property="og:locale" content="fr_FR" />' . "\n";
+		
+		// Twitter Cards
+		echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
+		echo '<meta name="twitter:title" content="' . esc_attr($region_title_seo) . '" />' . "\n";
+		echo '<meta name="twitter:description" content="' . esc_attr($region_meta_description) . '" />' . "\n";
+		echo '<meta name="twitter:image" content="' . esc_url($region_image_url) . '" />' . "\n";
+		
+		// Canonical
+		echo '<link rel="canonical" href="' . esc_url(get_permalink()) . '" />' . "\n";
+		
+		// Robots
+		echo '<meta name="robots" content="index, follow" />' . "\n";
 	}, 1);
+	
+	// Ajouter le schéma JSON-LD CollectionPage/ItemList
+	add_action('wp_head', function() use ($region_name, $region_meta_description, $region_image_url, $region_id) {
+		// On récupère les jeux pour le schéma ItemList
+		$games = array();
+		$filtered_departements = array();
+		
+		try {
+			$departements = get_posts(array(
+				'post_type' => 'departement',
+				'posts_per_page' => -1,
+				'suppress_filters' => false
+			));
+			
+			if (!empty($departements)) {
+				foreach ($departements as $departement) {
+					$region_field = get_field('region', $departement->ID);
+					$reg_id = is_object($region_field) && isset($region_field->ID) ? $region_field->ID : (is_numeric($region_field) ? $region_field : null);
+					
+					if ($reg_id == $region_id) {
+						$filtered_departements[] = $departement;
+					}
+				}
+			}
+			
+			// Récupérer les jeux (simplifié pour le schéma)
+			$all_games = get_posts(array(
+				'post_type' => 'game',
+				'posts_per_page' => 20, // Limiter pour le schéma
+				'suppress_filters' => false
+			));
+			
+			foreach ($all_games as $game) {
+				$city_field = get_field('city', $game->ID);
+				$city_id = is_object($city_field) && isset($city_field->ID) ? $city_field->ID : (is_numeric($city_field) ? $city_field : null);
+				
+				if ($city_id) {
+					$departement_field = get_field('ville', $city_id);
+					$departement_id = is_object($departement_field) && isset($departement_field->ID) ? $departement_field->ID : (is_numeric($departement_field) ? $departement_field : null);
+					
+					if ($departement_id) {
+						foreach ($filtered_departements as $departement) {
+							if ($departement->ID == $departement_id) {
+								$games[] = $game;
+								break;
+							}
+						}
+					}
+				}
+			}
+		} catch (Exception $e) {
+			$games = array();
+		}
+		
+		// Schéma CollectionPage avec ItemList
+		$schema = array(
+			'@context' => 'https://schema.org',
+			'@type' => 'CollectionPage',
+			'name' => 'Jeu de piste Urban Quest en ' . esc_html($region_name) . ' - Aventure connectée',
+			'description' => $region_meta_description,
+			'url' => get_permalink(),
+			'image' => $region_image_url,
+			'about' => array(
+				'@type' => 'State',
+				'name' => $region_name
+			),
+			'publisher' => array(
+				'@type' => 'Organization',
+				'name' => 'Urban Quest',
+				'url' => get_site_url()
+			)
+		);
+		
+		// Ajouter ItemList si des jeux sont disponibles
+		if (!empty($games)) {
+			$items = array();
+			foreach ($games as $index => $game) {
+				$game_url = get_permalink($game->ID);
+				$game_title = get_the_title($game->ID);
+				$game_image = get_the_post_thumbnail_url($game->ID, 'medium');
+				
+				$items[] = array(
+					'@type' => 'ListItem',
+					'position' => $index + 1,
+					'item' => array(
+						'@type' => 'Product',
+						'name' => $game_title,
+						'url' => $game_url,
+						'image' => $game_image ?: $region_image_url
+					)
+				);
+			}
+			
+			$schema['mainEntity'] = array(
+				'@type' => 'ItemList',
+				'numberOfItems' => count($games),
+				'itemListElement' => $items
+			);
+		}
+		
+		echo '<script type="application/ld+json">' . "\n";
+		echo wp_json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+		echo "\n" . '</script>' . "\n";
+	}, 99);
 	
 	rewind_posts();
 }
@@ -221,23 +368,35 @@ do_action( 'hestia_before_single_post_wrapper' );
 	function get_game_display_data($game) {
 		$game_id = is_object($game) ? $game->ID : $game;
 		
-		// Image : utilise image_liste ACF, sinon thumbnail, sinon image par défaut
-		$image_liste = get_field('image_liste', $game_id);
+		// Image : utilise image_principale ACF, sinon image_liste, sinon thumbnail, sinon image par défaut
+		$image_principale = get_field('image_principale', $game_id);
 		$game_image = '';
-		if ($image_liste) {
-			if (is_array($image_liste) && isset($image_liste['url'])) {
-				$game_image = $image_liste['url'];
-			} elseif (is_string($image_liste)) {
-				$game_image = $image_liste;
-			} elseif (is_numeric($image_liste)) {
-				$game_image = wp_get_attachment_image_url($image_liste, 'medium');
+		if ($image_principale) {
+			if (is_array($image_principale) && isset($image_principale['url'])) {
+				$game_image = $image_principale['url'];
+			} elseif (is_string($image_principale)) {
+				$game_image = $image_principale;
+			} elseif (is_numeric($image_principale)) {
+				$game_image = wp_get_attachment_image_url($image_principale, 'medium');
+			}
+		}
+		if (empty($game_image)) {
+			$image_liste = get_field('image_liste', $game_id);
+			if ($image_liste) {
+				if (is_array($image_liste) && isset($image_liste['url'])) {
+					$game_image = $image_liste['url'];
+				} elseif (is_string($image_liste)) {
+					$game_image = $image_liste;
+				} elseif (is_numeric($image_liste)) {
+					$game_image = wp_get_attachment_image_url($image_liste, 'medium');
+				}
 			}
 		}
 		if (empty($game_image)) {
 			$game_image = get_the_post_thumbnail_url($game_id, 'medium');
 		}
 		if (empty($game_image)) {
-			$game_image = 'https://urbanquest.fr/wp-content/uploads/2019/06/urbanquest-bordeauxSMALL.jpg';
+			$game_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
 		}
 		
 		// Titre : utilise titre_liste ACF, sinon post_title
@@ -297,7 +456,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 		$region_description = get_the_content();
 	}
 	if (empty($region_description)) {
-		$region_description = "Découvrez la région " . esc_html($region_name) . " à travers nos jeux de piste connectés Urban Quest. Notre région regorge de trésors cachés et de patrimoine à explorer. Partez à l'aventure en famille ou entre amis pour résoudre des énigmes passionnantes et vivre une expérience unique. Urban Quest vous invite à explorer les plus belles villes et sites historiques de " . esc_html($region_name) . " de manière ludique et interactive.";
+		$region_description = "Découvrez la région " . esc_html($region_name) . " à travers nos jeux de piste connectés Urban Quest. Ce jeu de piste innovant vous permet d'explorer les plus belles villes et sites historiques de " . esc_html($region_name) . " de manière ludique et interactive. Partez à l'aventure en famille ou entre amis pour résoudre des énigmes passionnantes et vivre une expérience de jeu de piste unique.";
 	}
 	
 	// Récupérer tous les jeux de cette région via la chaîne de relations
@@ -401,7 +560,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					
 					<!-- Liste des jeux -->
 					<?php if (!empty($games)) : ?>
-						<h2 style="margin-bottom: 40px;">Les jeux de piste en <?php echo esc_html($region_name); ?></h2>
+						<h2 style="margin-bottom: 40px;">Jeu de piste en <?php echo esc_html($region_name); ?> - Nos aventures</h2>
 						<div class="row">
 							<?php 
 							foreach ($games as $game) : 
@@ -415,7 +574,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 							?>
 							<div class="col-md-4" style="margin-bottom: 30px;">
 								<div style="text-align: center;">
-									<img src="<?php echo esc_url($game_image); ?>" alt="<?php echo esc_attr($game_title); ?>" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px;" />
+									<img src="<?php echo esc_url($game_image); ?>" alt="Jeu de piste connecté Urban Quest - <?php echo esc_attr($game_title); ?> à <?php echo esc_attr($game_data['city_name']); ?>" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px;" loading="lazy" />
 									<h3 style="margin: 10px 0;"><?php echo esc_html($game_title); ?></h3>
 									<p style="margin-bottom: 20px;"><?php echo esc_html($game_excerpt); ?></p>
 									<a href="<?php echo esc_url($game_permalink); ?>" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;">Découvrir le jeu</a>
@@ -439,7 +598,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 									<h3 style="margin: 0 0 15px; font-size: 22px; color: #1f2a37;"><?php echo esc_html($departement_name); ?></h3>
 									<a href="<?php echo esc_url($departement_permalink); ?>" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px; font-size: 14px;">
-										Voir les jeux de piste de <?php echo esc_html($departement_name); ?>
+										Voir le jeu de piste du <?php echo esc_html($departement_name); ?>
 									</a>
 								</div>
 							</div>

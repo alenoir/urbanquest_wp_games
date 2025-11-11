@@ -74,12 +74,28 @@
     "title": "Jeu",
     "fields": [
       {
+        "key": "field_tab_general",
+        "label": "Informations générales",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
         "key": "field_690dc3f29d95a",
         "label": "Ville",
         "name": "city",
         "aria-label": "",
         "type": "relationship",
-        "instructions": "",
+        "instructions": "Sélectionnez la ville associée à ce jeu",
         "required": 1,
         "conditional_logic": 0,
         "wrapper": {
@@ -100,12 +116,37 @@
         "bidirectional_target": []
       },
       {
-        "key": "field_690dc89e8f8f5",
-        "label": "Point de départ",
-        "name": "point_de_depart",
+        "key": "field_game_image_carte_offre",
+        "label": "Image principale",
+        "name": "image_principale",
+        "aria-label": "",
+        "type": "image",
+        "instructions": "Image principale du jeu utilisée dans les listes, les cartes d'offre et les réseaux sociaux. Dimensions requises : 1200x630px (format Open Graph). Si vide, utilise l'image par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "return_format": "array",
+        "library": "all",
+        "min_width": "1200",
+        "min_height": "630",
+        "min_size": "",
+        "max_width": "1200",
+        "max_height": "630",
+        "max_size": "",
+        "mime_types": "",
+        "preview_size": "medium"
+      },
+      {
+        "key": "field_game_titre_principal",
+        "label": "Titre principal",
+        "name": "titre_principal",
         "aria-label": "",
         "type": "text",
-        "instructions": "",
+        "instructions": "Titre principal affiché en haut de la page (ex: 'Jouez quand vous voulez à Bordeaux'). Si vide, utilise 'Jouez quand vous voulez à [ville]' par défaut.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -115,17 +156,17 @@
         },
         "default_value": "",
         "maxlength": "",
-        "placeholder": "",
+        "placeholder": "Jouez quand vous voulez à [ville]",
         "prepend": "",
         "append": ""
       },
       {
-        "key": "field_690dc8a68f8f6",
-        "label": "Url de paiement",
-        "name": "payment_url",
+        "key": "field_game_description_principale",
+        "label": "Description principale",
+        "name": "description_principale",
         "aria-label": "",
-        "type": "url",
-        "instructions": "",
+        "type": "wysiwyg",
+        "instructions": "Description principale du jeu affichée en haut de la page. Utilisez l'éditeur WYSIWYG pour formater le texte.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -134,7 +175,26 @@
           "id": ""
         },
         "default_value": "",
-        "placeholder": ""
+        "tabs": "all",
+        "toolbar": "full",
+        "media_upload": 1,
+        "delay": 0
+      },
+      {
+        "key": "field_tab_liste",
+        "label": "Affichage dans les listes",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
       },
       {
         "key": "field_game_image_liste",
@@ -162,6 +222,26 @@
         "preview_size": "medium"
       },
       {
+        "key": "field_game_titre_liste",
+        "label": "Titre pour la liste",
+        "name": "titre_liste",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre personnalisé pour les listes (si vide, utilise le titre du jeu)",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "maxlength": "",
+        "placeholder": "",
+        "prepend": "",
+        "append": ""
+      },
+      {
         "key": "field_game_description_liste",
         "label": "Description pour la liste",
         "name": "description_liste",
@@ -182,12 +262,28 @@
         "new_lines": ""
       },
       {
-        "key": "field_game_titre_liste",
-        "label": "Titre pour la liste",
-        "name": "titre_liste",
+        "key": "field_tab_prix",
+        "label": "Configuration de paiement",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
+        "key": "field_690dc8a68f8f6",
+        "label": "URL de paiement",
+        "name": "payment_url",
         "aria-label": "",
-        "type": "text",
-        "instructions": "Titre personnalisé pour les listes (si vide, utilise le titre du jeu)",
+        "type": "url",
+        "instructions": "Lien vers la page de paiement du jeu",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -196,10 +292,7 @@
           "id": ""
         },
         "default_value": "",
-        "maxlength": "",
-        "placeholder": "",
-        "prepend": "",
-        "append": ""
+        "placeholder": ""
       },
       {
         "key": "field_game_prix_original",
@@ -242,66 +335,6 @@
         "append": ""
       },
       {
-        "key": "field_game_nombre_joueurs",
-        "label": "Nombre de joueurs",
-        "name": "nombre_joueurs",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Nombre de joueurs (ex: 2 – 5 joueurs). Si vide, utilise '2 – 5 joueurs' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "2 – 5 joueurs",
-        "maxlength": "",
-        "placeholder": "2 – 5 joueurs",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_game_age_minimum",
-        "label": "Âge minimum",
-        "name": "age_minimum",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Âge minimum (ex: à partir de 8 ans). Si vide, utilise 'à partir de 8 ans' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "à partir de 8 ans",
-        "maxlength": "",
-        "placeholder": "à partir de 8 ans",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_game_duree",
-        "label": "Durée",
-        "name": "duree",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Durée du jeu (ex: 60 minutes). Si vide, utilise '60 minutes' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "60 minutes",
-        "maxlength": "",
-        "placeholder": "60 minutes",
-        "prepend": "",
-        "append": ""
-      },
-      {
         "key": "field_game_titre_offre",
         "label": "Titre de l'offre",
         "name": "titre_offre",
@@ -322,12 +355,11 @@
         "append": ""
       },
       {
-        "key": "field_game_texte_offre",
-        "label": "Texte de l'offre",
-        "name": "texte_offre",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Texte affiché sous le prix (ex: 'Offre du moment !'). Si vide, utilise 'Offre du moment !' par défaut.",
+        "key": "field_tab_infos",
+        "label": "Informations du jeu",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -335,19 +367,38 @@
           "class": "",
           "id": ""
         },
-        "default_value": "Offre du moment !",
-        "maxlength": "",
-        "placeholder": "Offre du moment !",
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
+        "key": "field_game_nombre_joueurs_min",
+        "label": "Nombre de joueurs (minimum)",
+        "name": "nombre_joueurs_min",
+        "aria-label": "",
+        "type": "number",
+        "instructions": "Nombre minimum de joueurs (ex: 2). Si vide, utilise 2 par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": 2,
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "placeholder": "",
         "prepend": "",
         "append": ""
       },
       {
-        "key": "field_game_image_carte_offre",
-        "label": "Image de la carte d'offre",
-        "name": "image_carte_offre",
+        "key": "field_game_nombre_joueurs_max",
+        "label": "Nombre de joueurs (maximum)",
+        "name": "nombre_joueurs_max",
         "aria-label": "",
-        "type": "image",
-        "instructions": "Image de fond pour la carte d'offre (image bleue avec les personnes). Si vide, utilise l'image par défaut.",
+        "type": "number",
+        "instructions": "Nombre maximum de joueurs (ex: 5). Si vide, utilise 5 par défaut.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -355,44 +406,21 @@
           "class": "",
           "id": ""
         },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "preview_size": "medium"
-      },
-      {
-        "key": "field_game_titre_principal",
-        "label": "Titre principal",
-        "name": "titre_principal",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Titre principal affiché en haut de la page (ex: 'Jouez quand vous voulez à Bordeaux'). Si vide, utilise 'Jouez quand vous voulez à [ville]' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "",
-        "maxlength": "",
-        "placeholder": "Jouez quand vous voulez à [ville]",
+        "default_value": 5,
+        "min": 1,
+        "max": 50,
+        "step": 1,
+        "placeholder": "",
         "prepend": "",
         "append": ""
       },
       {
-        "key": "field_game_titre_seo",
-        "label": "Titre SEO",
-        "name": "titre_seo",
+        "key": "field_game_age_min",
+        "label": "Âge minimum",
+        "name": "age_min",
         "aria-label": "",
-        "type": "text",
-        "instructions": "Titre SEO personnalisé pour les balises meta et le title tag. Si vide, génère automatiquement 'Jeu de piste Urban Quest à [ville] - [titre du jeu]'.",
+        "type": "number",
+        "instructions": "Âge minimum requis (ex: 7). Si vide, utilise 7 par défaut.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -400,19 +428,21 @@
           "class": "",
           "id": ""
         },
-        "default_value": "",
-        "maxlength": "",
-        "placeholder": "Jeu de piste Urban Quest à [ville] - [titre]",
+        "default_value": 7,
+        "min": 0,
+        "max": 18,
+        "step": 1,
+        "placeholder": "",
         "prepend": "",
-        "append": ""
+        "append": " ans"
       },
       {
-        "key": "field_game_description_principale",
-        "label": "Description principale",
-        "name": "description_principale",
+        "key": "field_game_age_max",
+        "label": "Âge maximum",
+        "name": "age_max",
         "aria-label": "",
-        "type": "wysiwyg",
-        "instructions": "Description principale du jeu affichée en haut de la page. Utilisez l'éditeur WYSIWYG pour formater le texte.",
+        "type": "number",
+        "instructions": "Âge maximum recommandé (ex: 77). Si vide, utilise 77 par défaut.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -420,19 +450,21 @@
           "class": "",
           "id": ""
         },
-        "default_value": "",
-        "tabs": "all",
-        "toolbar": "full",
-        "media_upload": 1,
-        "delay": 0
+        "default_value": 77,
+        "min": 1,
+        "max": 120,
+        "step": 1,
+        "placeholder": "",
+        "prepend": "",
+        "append": " ans"
       },
       {
-        "key": "field_game_titre_section_infos",
-        "label": "Titre de la section infos",
-        "name": "titre_section_infos",
+        "key": "field_game_duree_minutes",
+        "label": "Durée (en minutes)",
+        "name": "duree_minutes",
         "aria-label": "",
-        "type": "text",
-        "instructions": "Titre de la section '+ d'infos sur le jeu' (ex: 'Depuis Jeu'). Si vide, utilise '+ d'infos sur le jeu' par défaut.",
+        "type": "number",
+        "instructions": "Durée du jeu en minutes (ex: 60). Si vide, utilise 60 par défaut.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -440,19 +472,21 @@
           "class": "",
           "id": ""
         },
-        "default_value": "+ d'infos sur le jeu",
-        "maxlength": "",
-        "placeholder": "+ d'infos sur le jeu",
+        "default_value": 60,
+        "min": 1,
+        "max": 600,
+        "step": 1,
+        "placeholder": "",
         "prepend": "",
-        "append": ""
+        "append": " min"
       },
       {
-        "key": "field_game_tranche_age",
-        "label": "Tranche d'âge",
-        "name": "tranche_age",
+        "key": "field_game_distance_km",
+        "label": "Distance (en km)",
+        "name": "distance_km",
         "aria-label": "",
-        "type": "text",
-        "instructions": "Tranche d'âge affichée dans la section infos (ex: 'De 7 à 77 ans'). Si vide, utilise 'De 7 à 77 ans' par défaut.",
+        "type": "number",
+        "instructions": "Distance du parcours en kilomètres (ex: 3.4). Si vide, utilise 3.4 par défaut.",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -460,31 +494,13 @@
           "class": "",
           "id": ""
         },
-        "default_value": "De 7 à 77 ans",
-        "maxlength": "",
-        "placeholder": "De 7 à 77 ans",
+        "default_value": 3.4,
+        "min": 0,
+        "max": 50,
+        "step": 0.1,
+        "placeholder": "",
         "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_game_distance",
-        "label": "Distance",
-        "name": "distance",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Distance du parcours affichée dans la section infos (ex: 'Env. 3,4km'). Si vide, utilise 'Env. 3,4km' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "Env. 3,4km",
-        "maxlength": "",
-        "placeholder": "Env. 3,4km",
-        "prepend": "",
-        "append": ""
+        "append": " km"
       },
       {
         "key": "field_game_jauge_fun",
@@ -575,6 +591,22 @@
         "append": "%"
       },
       {
+        "key": "field_tab_seo",
+        "label": "SEO et avis",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
         "key": "field_game_rating_value",
         "label": "Note moyenne (sur 5)",
         "name": "rating_value",
@@ -643,12 +675,28 @@
     "title": "Région",
     "fields": [
       {
+        "key": "field_tab_region_general",
+        "label": "Informations générales",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
         "key": "field_690dc2e51530b",
         "label": "Pays",
         "name": "countries",
         "aria-label": "",
         "type": "relationship",
-        "instructions": "",
+        "instructions": "Sélectionnez le pays associé à cette région",
         "required": 1,
         "conditional_logic": 0,
         "wrapper": {
@@ -688,80 +736,28 @@
         "new_lines": ""
       },
       {
+        "key": "field_tab_region_visuel",
+        "label": "Contenu visuel",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
         "key": "field_690e2dd1eb47e",
         "label": "Image/carte de la région",
         "name": "image_region",
         "aria-label": "",
         "type": "image",
-        "instructions": "",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "allow_in_bindings": 0,
-        "preview_size": "medium"
-      },
-      {
-        "key": "field_690e2de7eb47f",
-        "label": "Texte du témoignage",
-        "name": "temoignage_texte",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_690e2deceb480",
-        "label": "Auteur du témoignage",
-        "name": "temoignage_auteur",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_690e2df4eb481",
-        "label": "Photo de l'auteur",
-        "name": "temoignage_avatar",
-        "aria-label": "",
-        "type": "image",
-        "instructions": "",
+        "instructions": "Image ou carte représentant la région",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -787,7 +783,7 @@
         "name": "carousel_images",
         "aria-label": "",
         "type": "text",
-        "instructions": "",
+        "instructions": "Images supplémentaires pour le carrousel",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -801,6 +797,90 @@
         "placeholder": "",
         "prepend": "",
         "append": ""
+      },
+      {
+        "key": "field_tab_region_temoignage",
+        "label": "Témoignage",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
+        "key": "field_690e2de7eb47f",
+        "label": "Texte du témoignage",
+        "name": "temoignage_texte",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Texte du témoignage client",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "maxlength": "",
+        "allow_in_bindings": 0,
+        "placeholder": "",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_690e2deceb480",
+        "label": "Auteur du témoignage",
+        "name": "temoignage_auteur",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Nom de l'auteur du témoignage",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "maxlength": "",
+        "allow_in_bindings": 0,
+        "placeholder": "",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_690e2df4eb481",
+        "label": "Photo de l'auteur",
+        "name": "temoignage_avatar",
+        "aria-label": "",
+        "type": "image",
+        "instructions": "Photo de l'auteur du témoignage",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "return_format": "array",
+        "library": "all",
+        "min_width": "",
+        "min_height": "",
+        "min_size": "",
+        "max_width": "",
+        "max_height": "",
+        "max_size": "",
+        "mime_types": "",
+        "allow_in_bindings": 0,
+        "preview_size": "medium"
       }
     ],
     "location": [
@@ -828,12 +908,28 @@
     "title": "Ville",
     "fields": [
       {
+        "key": "field_tab_ville_general",
+        "label": "Informations générales",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
         "key": "field_690dc3a42cb41",
         "label": "Département",
         "name": "ville",
         "aria-label": "",
         "type": "relationship",
-        "instructions": "",
+        "instructions": "Sélectionnez le département associé à cette ville",
         "required": 1,
         "conditional_logic": 0,
         "wrapper": {
@@ -850,6 +946,22 @@
         "max": 1,
         "elements": "",
         "bidirectional_target": []
+      },
+      {
+        "key": "field_tab_ville_terrain",
+        "label": "Section terrain de jeu",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
       },
       {
         "key": "field_city_titre_terrain_de_jeu",
@@ -915,6 +1027,22 @@
         "toolbar": "full",
         "media_upload": 1,
         "delay": 0
+      },
+      {
+        "key": "field_tab_ville_jeu_unique",
+        "label": "Section jeu unique",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
       },
       {
         "key": "field_city_titre_jeu_unique",
