@@ -1,0 +1,137 @@
+/* Styles pour la modal de génération IA */
+.urbanquest-ai-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.urbanquest-ai-modal {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 100001;
+}
+
+.urbanquest-ai-modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.urbanquest-ai-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #23282d;
+}
+
+.urbanquest-ai-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  color: #666;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.urbanquest-ai-modal-close:hover {
+  color: #000;
+}
+
+.urbanquest-ai-modal-close .dashicons {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.urbanquest-ai-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.urbanquest-ai-modal-body p {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.urbanquest-ai-modal-body label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #23282d;
+}
+
+.urbanquest-ai-modal-body textarea,
+.urbanquest-ai-modal-body select {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.urbanquest-ai-modal-body textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.urbanquest-ai-modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.urbanquest-ai-modal-footer .button {
+  margin: 0;
+}
+
+/* Styles pour le bouton de génération */
+.urbanquest-ai-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.urbanquest-ai-generate-btn .dashicons {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+  .urbanquest-ai-modal {
+    max-width: 100%;
+    margin: 10px;
+  }
+
+  .urbanquest-ai-modal-overlay {
+    padding: 10px;
+  }
+}

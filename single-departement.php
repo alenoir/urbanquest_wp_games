@@ -281,23 +281,20 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- Liste des villes -->
 					<?php if (!empty($filtered_villes)) : ?>
 						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
-						<h2 style="margin-bottom: 30px;">Les villes du département <?php echo esc_html($departement_name); ?></h2>
-						<div class="row" style="margin-bottom: 60px;">
+						<h2 style="margin-bottom: 30px;">Découvrez nos jeux de piste dans les villes de <?php echo esc_html($departement_name); ?></h2>
+						<ul style="margin-bottom: 60px; list-style: none; padding: 0;">
 							<?php foreach ($filtered_villes as $ville) : 
 								$ville_id = $ville->ID;
 								$ville_name = $ville->post_title;
 								$ville_permalink = get_permalink($ville_id);
 							?>
-							<div class="col-md-4" style="margin-bottom: 20px;">
-								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-									<h3 style="margin: 0 0 15px; font-size: 22px; color: #1f2a37;"><?php echo esc_html($ville_name); ?></h3>
-									<a href="<?php echo esc_url($ville_permalink); ?>" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px; font-size: 14px;">
-										Voir le jeu de piste à <?php echo esc_html($ville_name); ?>
-									</a>
-								</div>
-							</div>
+							<li style="margin-bottom: 10px;">
+								<a href="<?php echo esc_url($ville_permalink); ?>" style="color: #00bbff; text-decoration: none; font-size: 16px;">
+									Les jeux de piste à <?php echo esc_html($ville_name); ?>
+								</a>
+							</li>
 							<?php endforeach; ?>
-						</div>
+						</ul>
 					<?php endif; ?>
 
 				</div>

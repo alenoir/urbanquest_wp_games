@@ -2702,7 +2702,7 @@ function urbanquest_enqueue_acf_ai_scripts($hook) {
 		'urbanquest-acf-ai',
 		get_stylesheet_directory_uri() . '/css/acf-ai-generate.css',
 		array(),
-		'1.4.0' // Version mise à jour pour forcer le rechargement
+		'1.5.0' // Version mise à jour pour forcer le rechargement
 	);
 	
 	// Passer les données au JavaScript
