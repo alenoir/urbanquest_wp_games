@@ -138,6 +138,49 @@ if (have_posts()) {
 get_header();
 do_action('hestia_before_single_post_wrapper');
 ?>
+<style>
+	/* Styles pour la sidebar de jeu */
+	.game-card-image {
+		width: 100%;
+		height: 180px;
+		background-size: cover;
+		background-position: center;
+		border-radius: 12px ;
+		overflow: visible;
+		position: relative;
+		margin: 0;
+	}
+	
+	.game-price-badge-wrapper {
+		position: absolute;
+		bottom: -30px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 10;
+	}
+	
+	.game-price-badge {
+		background: #FFD700;
+		padding: 10px 20px;
+		border-radius: 999px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		white-space: nowrap;
+		min-width: 120px;
+		justify-content: center;
+	}
+	
+	/* Layout responsive pour les pages de jeu */
+	@media (max-width: 991px) {
+		.game-sidebar-card,
+		.game-info-sidebar {
+			position: static !important;
+			margin-top: 30px;
+		}
+	}
+</style>
 
 <div class="<?php echo hestia_layout(); ?>">
 	<div class="blog-post blog-post-wrapper">
@@ -334,8 +377,8 @@ do_action('hestia_before_single_post_wrapper');
 						urbanquest_display_breadcrumb_simple();
 					} ?>
 					
-					<div class="game-main-layout">
-						<div class="game-main-content">
+					<div class="row game-main-layout" style="margin-bottom: 60px;">
+						<div class="col-md-8 game-main-content">
 							<h2><?php echo esc_html($titre_principal); ?></h2>
 							
 							<?php if (!empty($description_principale)) : ?>
@@ -350,23 +393,23 @@ do_action('hestia_before_single_post_wrapper');
 							<p>Nos jeux sont conçus à la main par des game designers, en lien direct avec l'histoire et la géographie de <?php echo esc_html($ville_name); ?>... pour une expérience authentique et unique.</p>
 						</div>
 
-						<div class="game-sidebar-card">
-							<section class="game-card-section">
-								<div class="game-card-image" style="background-image: url('<?php echo esc_url($image_principale_url); ?>'); position: relative;">
+						<div class="col-md-4 game-sidebar-card" style="position: sticky; top: 20px;">
+							<section class="game-card-section" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px; overflow: visible;">
+								<div class="game-card-image" style="background-image: url('<?php echo esc_url($image_principale_url); ?>');">
 									<?php if ($overlay_image_url) : ?>
-										<img src="<?php echo esc_url($overlay_image_url); ?>" alt="Overlay Urban Quest" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 1;" />
+										<img src="<?php echo esc_url($overlay_image_url); ?>" alt="Overlay Urban Quest" style="position: absolute; top: 0; left: 0; width: 100%;  pointer-events: none; z-index: 1;" />
 									<?php endif; ?>
-									<div class="game-price-badge-wrapper" style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 2;">
+									<div class="game-price-badge-wrapper">
 										<div class="game-price-badge">
 											<?php if ($afficher_prix_original) : ?>
-												<span style="color: #1f2a37; font-size: 20px; text-decoration: line-through; font-weight: 500; opacity: 0.7;"><?php echo esc_html($prix_original); ?></span>
+												<span style="color: #1f2a37; font-size: 18px; text-decoration: line-through; font-weight: 500; opacity: 0.7; margin-right: 4px;"><?php echo esc_html($prix_original); ?></span>
 											<?php endif; ?>
-											<span style="color: #1f2a37; font-size: 36px; font-weight: bold; line-height: 1;"><?php echo esc_html($prix); ?></span>
+											<span style="color: #1f2a37; font-size: 32px; font-weight: bold; line-height: 1;"><?php echo esc_html($prix); ?></span>
 										</div>
 									</div>
 								</div>
 								
-								<div style="text-align: center; margin-top: 50px; margin-bottom: 18px;">
+								<div style="text-align: center; margin-top: 40px; margin-bottom: 18px;">
 									<span style="color: #1f2a37; font-size: 20px; font-weight: bold;"><?php echo esc_html($titre_offre); ?></span>
 								</div>
 								
@@ -442,9 +485,9 @@ do_action('hestia_before_single_post_wrapper');
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
-					<div class="game-info-section">
-						<div class="game-info-sidebar">
-							<section class="game-card-section">
+					<div class="row game-info-section" style="margin-bottom: 60px;">
+						<div class="col-md-4 game-info-sidebar" style="position: sticky; top: 20px;">
+							<section class="game-card-section" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px;">
 								<h3 style="text-align: left;"><?php echo esc_html($titre_section_infos); ?></h3>
 								<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 									<li style="list-style-type: none;">
@@ -478,7 +521,7 @@ do_action('hestia_before_single_post_wrapper');
 							</section>
 						</div>
 
-						<div class="game-info-content">
+						<div class="col-md-8 game-info-content">
 							<?php if ($ville_id) : ?>
 								<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
 								<div><img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" loading="lazy" /></div>
