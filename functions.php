@@ -31,7 +31,7 @@ if ( !function_exists( 'urbanquest_enqueue_responsive_styles' ) ):
             'urbanquest-responsive', 
             get_stylesheet_directory_uri() . '/urbanquest-responsive.css', 
             array( 'chld_thm_cfg_parent' ), 
-            '1.0.0' 
+            '1.1.0' 
         );
     }
 endif;
@@ -1309,7 +1309,7 @@ function urbanquest_display_breadcrumb_simple() {
 	
 	// Générer le HTML du breadcrumb simple (juste des liens)
 	?>
-	<div class="urbanquest-breadcrumb-simple" style="margin: 10px 30px 20px 30px; font-size: 14px; color: #666;">
+	<div class="urbanquest-breadcrumb-simple" style="margin: 30px 0 20px 0; font-size: 14px; color: #666;">
 		<?php foreach ($items as $index => $item) : ?>
 			<?php if ($index > 0) : ?>
 				<span style="margin: 0 6px; color: #999;">›</span>
@@ -2677,7 +2677,7 @@ function urbanquest_enqueue_acf_ai_scripts($hook) {
 		'urbanquest-acf-ai',
 		get_stylesheet_directory_uri() . '/js/acf-ai-generate.js',
 		array('jquery', 'acf-input'),
-		'1.2.0', // Version mise à jour pour forcer le rechargement
+		'1.3.0', // Version mise à jour pour forcer le rechargement
 		true
 	);
 	
@@ -2685,7 +2685,7 @@ function urbanquest_enqueue_acf_ai_scripts($hook) {
 		'urbanquest-acf-ai',
 		get_stylesheet_directory_uri() . '/css/acf-ai-generate.css',
 		array(),
-		'1.2.0' // Version mise à jour pour forcer le rechargement
+		'1.3.0' // Version mise à jour pour forcer le rechargement
 	);
 	
 	// Passer les données au JavaScript

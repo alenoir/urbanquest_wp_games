@@ -275,7 +275,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- Liste des jeux -->
 					<?php if (!empty($games)) : ?>
 						<h2 style="margin-bottom: 40px;">Jeu de piste dans le département <?php echo esc_html($departement_name); ?> - Nos aventures</h2>
-						<?php urbanquest_display_games_grid($games, ['columns' => 3, 'layout' => 'simple', 'show_city' => true]); ?>
+						<?php urbanquest_display_games_grid($games, ['columns' => 4, 'layout' => 'simple', 'show_city' => true]); ?>
 					<?php endif; ?>
 					
 					<!-- Liste des villes -->

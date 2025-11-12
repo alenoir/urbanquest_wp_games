@@ -505,7 +505,7 @@ do_action('hestia_before_single_post_wrapper');
 					<?php if (!empty($related_games)) : ?>
 						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 						<h2 style="text-align: center; margin-bottom: 40px;">Jeux qui peuvent vous intéresser</h2>
-						<?php urbanquest_display_games_grid($related_games, ['columns' => 3, 'show_city' => true]); ?>
+						<?php urbanquest_display_games_grid($related_games, ['columns' => 4, 'show_city' => true]); ?>
 					<?php endif; ?>
 					
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />

@@ -298,7 +298,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- Liste des jeux de la ville -->
 					<?php if (!empty($games)) : ?>
 						<h2 style="text-align: center; margin-bottom: 40px;">Jeu de piste à <?php echo esc_html($ville_name); ?> - Nos aventures</h2>
-						<?php urbanquest_display_games_grid($games, ['columns' => 3, 'show_city' => false]); ?>
+						<?php urbanquest_display_games_grid($games, ['columns' => 4, 'show_city' => false]); ?>
 					<?php else : ?>
 						<!-- Message SEO-friendly si aucun jeu -->
 						<div style="text-align: center; padding: 60px 20px; background: #F7F9FC; border-radius: 12px; margin-bottom: 60px;">

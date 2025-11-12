@@ -292,7 +292,85 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- Liste des jeux -->
 					<?php if (!empty($games)) : ?>
 						<h2 style="margin-bottom: 40px;">Jeu de piste en <?php echo esc_html($region_name); ?> - Nos aventures</h2>
-						<?php urbanquest_display_games_grid($games, ['columns' => 3, 'layout' => 'simple', 'show_city' => true]); ?>
+						<?php urbanquest_display_games_grid($games, ['columns' => 4, 'layout' => 'simple', 'show_city' => true]); ?>
+					<?php endif; ?>
+					
+					<!-- Section Autres jeux (anciennes pages) -->
+					<?php 
+					$autres_jeux = get_field('autres_jeux', $region_id);
+					if (!empty($autres_jeux) && is_array($autres_jeux)) : 
+					?>
+						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+						<h2 style="margin-bottom: 40px;">Autres jeux</h2>
+						<div class="row urbanquest-games-grid" style="margin-bottom: 60px;">
+							<?php foreach ($autres_jeux as $item) : 
+								// Récupérer la page depuis le répéteur ACF
+								$page = isset($item['page']) ? $item['page'] : null;
+								
+								// Gérer le cas où c'est un objet WP_Post ou un ID
+								if (is_numeric($page)) {
+									$page_id = intval($page);
+									$page_obj = get_post($page_id);
+									if (!$page_obj) {
+										continue;
+									}
+								} elseif (is_object($page) && isset($page->ID)) {
+									$page_id = $page->ID;
+									$page_obj = $page;
+								} else {
+									continue;
+								}
+								
+								$page_title = get_the_title($page_id);
+								$page_permalink = get_permalink($page_id);
+								$page_excerpt = get_the_excerpt($page_id);
+								if (empty($page_excerpt)) {
+									$page_content = get_post_field('post_content', $page_id);
+									// Enlever le HTML du contenu avant de créer l'extrait
+									$page_content = wp_strip_all_tags($page_content);
+									$page_excerpt = wp_trim_words($page_content, 20);
+								}
+								if (empty($page_excerpt)) {
+									$page_excerpt = 'Découvrez ce jeu de piste unique.';
+								}
+								// Enlever toutes les balises HTML de l'extrait
+								$page_excerpt = wp_strip_all_tags($page_excerpt);
+								// Limiter l'extrait à 20 mots maximum pour uniformiser les hauteurs
+								$page_excerpt = wp_trim_words($page_excerpt, 20, '...');
+								
+								// Récupérer l'image de la page
+								$page_image = get_the_post_thumbnail_url($page_id, 'medium');
+								if (empty($page_image)) {
+									$page_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
+								}
+							?>
+							<div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom: 30px; display: flex;">
+								<div class="urbanquest-game-card" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; width: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+									<a href="<?php echo esc_url($page_permalink); ?>" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%;">
+										<div style="position: relative; width: 100%; height: 200px; overflow: hidden;">
+											<img 
+												src="<?php echo esc_url($page_image); ?>" 
+												alt="<?php echo esc_attr($page_title); ?>" 
+												style="width: 100%; height: 100%; object-fit: cover;" 
+												loading="lazy" 
+											/>
+										</div>
+										<div style="padding: 20px; flex: 1; display: flex; flex-direction: column; min-height: 180px;">
+											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37; line-height: 1.3; min-height: 52px;"><?php echo esc_html($page_title); ?></h3>
+											<?php if (!empty($page_excerpt)) : ?>
+												<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5; flex: 1; min-height: 60px;"><?php echo esc_html($page_excerpt); ?></p>
+											<?php endif; ?>
+											<div style="text-align: center; margin-top: auto;">
+												<span style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 8px 20px; border-radius: 999px; font-size: 14px;">
+													Découvrir le jeu
+												</span>
+											</div>
+										</div>
+									</a>
+								</div>
+							</div>
+							<?php endforeach; ?>
+						</div>
 					<?php endif; ?>
 					
 					<!-- Liste des départements -->
