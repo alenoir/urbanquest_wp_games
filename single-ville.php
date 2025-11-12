@@ -170,14 +170,6 @@ if (have_posts()) {
 
 get_header();
 ?>
-
-<!-- Breadcrumb Navigation -->
-<?php 
-if (function_exists('urbanquest_display_breadcrumb')) {
-	urbanquest_display_breadcrumb();
-}
-?>
-
 <?php
 do_action( 'hestia_before_single_post_wrapper' );
 ?>
@@ -187,96 +179,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 		<div class="container">
 
 <?php if (have_posts()) : while (have_posts()) : the_post(); 
-	/**
-	 * Fonction helper pour extraire l'ID d'un champ ACF relationship
-	 */
-	function extract_acf_relationship_id($field_value) {
-		if (!$field_value) {
-			return null;
-		}
-		
-		if (is_object($field_value) && isset($field_value->ID)) {
-			return $field_value->ID;
-		}
-		
-		if (is_array($field_value) && !empty($field_value)) {
-			$first_item = $field_value[0];
-			if (is_object($first_item) && isset($first_item->ID)) {
-				return $first_item->ID;
-			}
-			if (is_numeric($first_item)) {
-				return $first_item;
-			}
-		}
-		
-		if (is_numeric($field_value)) {
-			return $field_value;
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * Fonction helper pour récupérer les données d'un jeu pour l'affichage dans les listes
-	 */
-	function get_game_display_data($game) {
-		$game_id = is_object($game) ? $game->ID : $game;
-		
-		// Image : utilise image_principale ACF, sinon image_liste, sinon thumbnail, sinon image par défaut
-		$image_principale = get_field('image_principale', $game_id);
-		$game_image = '';
-		if ($image_principale) {
-			if (is_array($image_principale) && isset($image_principale['url'])) {
-				$game_image = $image_principale['url'];
-			} elseif (is_string($image_principale)) {
-				$game_image = $image_principale;
-			} elseif (is_numeric($image_principale)) {
-				$game_image = wp_get_attachment_image_url($image_principale, 'medium');
-			}
-		}
-		if (empty($game_image)) {
-			$image_liste = get_field('image_liste', $game_id);
-			if ($image_liste) {
-				if (is_array($image_liste) && isset($image_liste['url'])) {
-					$game_image = $image_liste['url'];
-				} elseif (is_string($image_liste)) {
-					$game_image = $image_liste;
-				} elseif (is_numeric($image_liste)) {
-					$game_image = wp_get_attachment_image_url($image_liste, 'medium');
-				}
-			}
-		}
-		if (empty($game_image)) {
-			$game_image = get_the_post_thumbnail_url($game_id, 'medium');
-		}
-		if (empty($game_image)) {
-			$game_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
-		}
-		
-		// Titre : utilise titre_liste ACF, sinon post_title
-		$titre_liste = get_field('titre_liste', $game_id);
-		$game_title = !empty($titre_liste) ? $titre_liste : get_the_title($game_id);
-		
-		// Description : utilise description_liste ACF, sinon excerpt, sinon texte par défaut
-		$description_liste = get_field('description_liste', $game_id);
-		$game_excerpt = !empty($description_liste) ? $description_liste : get_the_excerpt($game_id);
-		if (empty($game_excerpt)) {
-			$game_excerpt = 'Découvrez ce jeu de piste unique dans cette ville.';
-		}
-		
-		// URL de paiement
-		$payment_url = get_field('payment_url', $game_id);
-		if (empty($payment_url)) {
-			$payment_url = get_permalink($game_id);
-		}
-		
-		return array(
-			'image' => $game_image,
-			'title' => $game_title,
-			'excerpt' => $game_excerpt,
-			'payment_url' => $payment_url
-		);
-	}
+	// Utiliser les fonctions centralisées de functions.php au lieu de les dupliquer
 	
 	$ville_id = get_the_ID();
 	$ville_name = get_the_title();
@@ -326,23 +229,25 @@ do_action( 'hestia_before_single_post_wrapper' );
 	// Remplacer [ville] par le nom de la ville
 	$description_section_jeu_unique = str_replace('[ville]', $ville_name, $description_section_jeu_unique);
 	
-	// Récupérer tous les jeux de cette ville
-	// Selon acf.json : game.city → ville (relationship, return_format: object, max: 1)
+	// Récupérer tous les jeux de cette ville (OPTIMISÉ avec meta_query)
 	$games = array();
 	if ($ville_id) {
-		$all_games = get_posts(array(
-			'post_type' => 'game',
-			'posts_per_page' => -1,
-			'post_status' => 'publish',
-			'suppress_filters' => false
-		));
+		// Utiliser la fonction optimisée avec meta_query
+		$games = urbanquest_get_games_by_city($ville_id);
 		
-		foreach ($all_games as $game) {
-			$city_field = get_field('city', $game->ID);
-			$city_id = extract_acf_relationship_id($city_field);
-			
-			if ($city_id == $ville_id) {
-				$games[] = $game;
+		// Fallback : utiliser la relation bidirectionnelle si disponible
+		if (empty($games) && function_exists('get_field')) {
+			$games_ids = get_field('games', $ville_id);
+			if ($games_ids) {
+				if (!is_array($games_ids)) {
+					$games_ids = [$games_ids];
+				}
+				$games = get_posts([
+					'post_type' => 'game',
+					'post__in' => array_map('intval', $games_ids),
+					'posts_per_page' => -1,
+					'post_status' => 'publish'
+				]);
 			}
 		}
 	}
@@ -393,28 +298,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- Liste des jeux de la ville -->
 					<?php if (!empty($games)) : ?>
 						<h2 style="text-align: center; margin-bottom: 40px;">Jeu de piste à <?php echo esc_html($ville_name); ?> - Nos aventures</h2>
-						<div class="row" style="margin-bottom: 60px;">
-							<?php foreach ($games as $game) : 
-								$game_data = get_game_display_data($game);
-							?>
-							<div class="col-md-4" style="margin-bottom: 30px;">
-								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-									<a href="<?php echo esc_url(get_permalink($game->ID)); ?>" style="text-decoration: none; color: inherit; display: block;">
-										<img src="<?php echo esc_url($game_data['image']); ?>" alt="Jeu de piste connecté Urban Quest - <?php echo esc_attr($game_data['title']); ?> à <?php echo esc_attr($ville_name); ?>" style="width: 100%; height: 200px; object-fit: cover;" loading="lazy" />
-										<div style="padding: 20px;">
-											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37;"><?php echo esc_html($game_data['title']); ?></h3>
-											<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5;"><?php echo esc_html(wp_trim_words($game_data['excerpt'], 20)); ?></p>
-											<div style="text-align: center;">
-												<span style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 8px 20px; border-radius: 999px; font-size: 14px;">
-													Découvrir le jeu
-												</span>
-											</div>
-										</div>
-									</a>
-								</div>
-							</div>
-							<?php endforeach; ?>
-						</div>
+						<?php urbanquest_display_games_grid($games, ['columns' => 3, 'show_city' => false]); ?>
 					<?php else : ?>
 						<!-- Message SEO-friendly si aucun jeu -->
 						<div style="text-align: center; padding: 60px 20px; background: #F7F9FC; border-radius: 12px; margin-bottom: 60px;">

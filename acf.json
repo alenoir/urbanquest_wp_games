@@ -21,11 +21,12 @@
         "post_status": "",
         "taxonomy": "",
         "filters": ["search", "post_type", "taxonomy"],
-        "return_format": "object",
+        "return_format": "id",
         "min": 1,
         "max": 1,
         "elements": "",
-        "bidirectional_target": []
+        "bidirectional": 1,
+        "bidirectional_target": ["field_region_departements"]
       },
       {
         "key": "field_690e2db6eb47d_dept",
@@ -107,13 +108,13 @@
         "post_status": "",
         "taxonomy": "",
         "filters": ["search", "post_type", "taxonomy"],
-        "return_format": "object",
+        "return_format": "id",
         "min": 1,
         "max": 1,
         "allow_in_bindings": 1,
         "elements": "",
-        "bidirectional": 0,
-        "bidirectional_target": []
+        "bidirectional": 1,
+        "bidirectional_target": ["field_ville_games"]
       },
       {
         "key": "field_game_image_carte_offre",
@@ -138,6 +139,31 @@
         "max_height": "630",
         "max_size": "",
         "mime_types": "",
+        "preview_size": "medium"
+      },
+      {
+        "key": "field_game_overlay_image",
+        "label": "Overlay image principale",
+        "name": "overlay_image_principale",
+        "aria-label": "",
+        "type": "image",
+        "instructions": "Image overlay à afficher par-dessus l'image principale. Format PNG avec transparence recommandé. Si vide, utilise l'overlay par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "return_format": "array",
+        "library": "all",
+        "min_width": "",
+        "min_height": "",
+        "min_size": "",
+        "max_width": "",
+        "max_height": "",
+        "max_size": "",
+        "mime_types": "png",
         "preview_size": "medium"
       },
       {
@@ -179,87 +205,6 @@
         "toolbar": "full",
         "media_upload": 1,
         "delay": 0
-      },
-      {
-        "key": "field_tab_liste",
-        "label": "Affichage dans les listes",
-        "name": "",
-        "type": "tab",
-        "instructions": "",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "placement": "top",
-        "endpoint": 0
-      },
-      {
-        "key": "field_game_image_liste",
-        "label": "Image pour la liste",
-        "name": "image_liste",
-        "aria-label": "",
-        "type": "image",
-        "instructions": "Image utilisée dans les listes de jeux (si vide, utilise l'image à la une)",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "preview_size": "medium"
-      },
-      {
-        "key": "field_game_titre_liste",
-        "label": "Titre pour la liste",
-        "name": "titre_liste",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Titre personnalisé pour les listes (si vide, utilise le titre du jeu)",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "",
-        "maxlength": "",
-        "placeholder": "",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_game_description_liste",
-        "label": "Description pour la liste",
-        "name": "description_liste",
-        "aria-label": "",
-        "type": "textarea",
-        "instructions": "Description courte affichée dans les listes de jeux (si vide, utilise l'extrait)",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "",
-        "maxlength": "",
-        "rows": 4,
-        "placeholder": "",
-        "new_lines": ""
       },
       {
         "key": "field_tab_prix",
@@ -687,12 +632,12 @@
         "append": ""
       },
       {
-        "key": "field_pourquoi_choisir_image_1",
-        "label": "Image 1",
-        "name": "pourquoi_choisir_image_1",
+        "key": "field_pourquoi_choisir_images",
+        "label": "Images de composition",
+        "name": "pourquoi_choisir_images",
         "aria-label": "",
-        "type": "image",
-        "instructions": "Première image de composition (optionnel)",
+        "type": "repeater",
+        "instructions": "Ajoutez jusqu'à 5 images pour la composition (optionnel)",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -700,116 +645,40 @@
           "class": "",
           "id": ""
         },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "preview_size": "medium"
-      },
-      {
-        "key": "field_pourquoi_choisir_image_2",
-        "label": "Image 2",
-        "name": "pourquoi_choisir_image_2",
-        "aria-label": "",
-        "type": "image",
-        "instructions": "Deuxième image de composition (optionnel)",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "preview_size": "medium"
-      },
-      {
-        "key": "field_pourquoi_choisir_image_3",
-        "label": "Image 3",
-        "name": "pourquoi_choisir_image_3",
-        "aria-label": "",
-        "type": "image",
-        "instructions": "Troisième image de composition (optionnel)",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "preview_size": "medium"
-      },
-      {
-        "key": "field_pourquoi_choisir_image_4",
-        "label": "Image 4",
-        "name": "pourquoi_choisir_image_4",
-        "aria-label": "",
-        "type": "image",
-        "instructions": "Quatrième image de composition (optionnel)",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "preview_size": "medium"
-      },
-      {
-        "key": "field_pourquoi_choisir_image_5",
-        "label": "Image 5",
-        "name": "pourquoi_choisir_image_5",
-        "aria-label": "",
-        "type": "image",
-        "instructions": "Cinquième image de composition (optionnel)",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "return_format": "array",
-        "library": "all",
-        "min_width": "",
-        "min_height": "",
-        "min_size": "",
-        "max_width": "",
-        "max_height": "",
-        "max_size": "",
-        "mime_types": "",
-        "preview_size": "medium"
+        "layout": "table",
+        "pagination": 0,
+        "min": 0,
+        "max": 5,
+        "collapsed": "",
+        "button_label": "Ajouter une image",
+        "rows_per_page": 5,
+        "sub_fields": [
+          {
+            "key": "field_pourquoi_choisir_image_item",
+            "label": "Image",
+            "name": "image",
+            "aria-label": "",
+            "type": "image",
+            "instructions": "",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+              "width": "",
+              "class": "",
+              "id": ""
+            },
+            "return_format": "array",
+            "library": "all",
+            "min_width": "",
+            "min_height": "",
+            "min_size": "",
+            "max_width": "",
+            "max_height": "",
+            "max_size": "",
+            "mime_types": "",
+            "preview_size": "medium"
+          }
+        ]
       },
       {
         "key": "field_pourquoi_choisir_texte",
@@ -833,12 +702,12 @@
         "new_lines": ""
       },
       {
-        "key": "field_pourquoi_choisir_feature_1_icone",
-        "label": "Fonctionnalité 1 - Icône (nom Lucide)",
-        "name": "pourquoi_choisir_feature_1_icone",
+        "key": "field_pourquoi_choisir_features",
+        "label": "Fonctionnalités",
+        "name": "pourquoi_choisir_features",
         "aria-label": "",
-        "type": "text",
-        "instructions": "Nom de l'icône Lucide pour la première fonctionnalité (ex: calendar-heart). Si vide, utilise 'calendar-heart' par défaut.",
+        "type": "repeater",
+        "instructions": "Ajoutez jusqu'à 5 fonctionnalités à mettre en avant",
         "required": 0,
         "conditional_logic": 0,
         "wrapper": {
@@ -846,180 +715,78 @@
           "class": "",
           "id": ""
         },
-        "default_value": "calendar-heart",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "calendar-heart",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_1_titre",
-        "label": "Fonctionnalité 1 - Titre",
-        "name": "pourquoi_choisir_feature_1_titre",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Titre de la première fonctionnalité (en gras). Si vide, utilise '100% libre' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "100% libre",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "100% libre",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_1_description",
-        "label": "Fonctionnalité 1 - Description",
-        "name": "pourquoi_choisir_feature_1_description",
-        "aria-label": "",
-        "type": "textarea",
-        "instructions": "Description de la première fonctionnalité. Si vide, utilise la description par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "Vous lancez la session quand vous voulez, où vous voulez.",
-        "maxlength": "",
-        "rows": 2,
-        "allow_in_bindings": 0,
-        "placeholder": "Vous lancez la session quand vous voulez, où vous voulez.",
-        "new_lines": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_2_icone",
-        "label": "Fonctionnalité 2 - Icône (nom Lucide)",
-        "name": "pourquoi_choisir_feature_2_icone",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Nom de l'icône Lucide pour la deuxième fonctionnalité (ex: smartphone). Si vide, utilise 'smartphone' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "smartphone",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "smartphone",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_2_titre",
-        "label": "Fonctionnalité 2 - Titre",
-        "name": "pourquoi_choisir_feature_2_titre",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Titre de la deuxième fonctionnalité (en gras). Si vide, utilise 'Ultra simple' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "Ultra simple",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "Ultra simple",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_2_description",
-        "label": "Fonctionnalité 2 - Description",
-        "name": "pourquoi_choisir_feature_2_description",
-        "aria-label": "",
-        "type": "textarea",
-        "instructions": "Description de la deuxième fonctionnalité. Si vide, utilise la description par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "Vos instructions de jeu par e-mail, votre smartphone… c'est tout.",
-        "maxlength": "",
-        "rows": 2,
-        "allow_in_bindings": 0,
-        "placeholder": "Vos instructions de jeu par e-mail, votre smartphone… c'est tout.",
-        "new_lines": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_3_icone",
-        "label": "Fonctionnalité 3 - Icône (nom Lucide)",
-        "name": "pourquoi_choisir_feature_3_icone",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Nom de l'icône Lucide pour la troisième fonctionnalité (ex: swords). Si vide, utilise 'swords' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "swords",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "swords",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_3_titre",
-        "label": "Fonctionnalité 3 - Titre",
-        "name": "pourquoi_choisir_feature_3_titre",
-        "aria-label": "",
-        "type": "text",
-        "instructions": "Titre de la troisième fonctionnalité (en gras). Si vide, utilise 'Fun & challenge' par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "Fun & challenge",
-        "maxlength": "",
-        "allow_in_bindings": 0,
-        "placeholder": "Fun & challenge",
-        "prepend": "",
-        "append": ""
-      },
-      {
-        "key": "field_pourquoi_choisir_feature_3_description",
-        "label": "Fonctionnalité 3 - Description",
-        "name": "pourquoi_choisir_feature_3_description",
-        "aria-label": "",
-        "type": "textarea",
-        "instructions": "Description de la troisième fonctionnalité. Si vide, utilise la description par défaut.",
-        "required": 0,
-        "conditional_logic": 0,
-        "wrapper": {
-          "width": "",
-          "class": "",
-          "id": ""
-        },
-        "default_value": "Défis variés, énigmes malignes, score et classement.",
-        "maxlength": "",
-        "rows": 2,
-        "allow_in_bindings": 0,
-        "placeholder": "Défis variés, énigmes malignes, score et classement.",
-        "new_lines": ""
+        "layout": "block",
+        "pagination": 0,
+        "min": 1,
+        "max": 5,
+        "collapsed": "",
+        "button_label": "Ajouter une fonctionnalité",
+        "rows_per_page": 5,
+        "sub_fields": [
+          {
+            "key": "field_pourquoi_choisir_feature_icone",
+            "label": "Icône (nom Lucide)",
+            "name": "icone",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Nom de l'icône Lucide (ex: calendar-heart, smartphone, swords)",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+              "width": "",
+              "class": "",
+              "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "calendar-heart",
+            "prepend": "",
+            "append": ""
+          },
+          {
+            "key": "field_pourquoi_choisir_feature_titre",
+            "label": "Titre",
+            "name": "titre",
+            "aria-label": "",
+            "type": "text",
+            "instructions": "Titre de la fonctionnalité (en gras)",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+              "width": "",
+              "class": "",
+              "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "allow_in_bindings": 0,
+            "placeholder": "100% libre",
+            "prepend": "",
+            "append": ""
+          },
+          {
+            "key": "field_pourquoi_choisir_feature_description",
+            "label": "Description",
+            "name": "description",
+            "aria-label": "",
+            "type": "textarea",
+            "instructions": "Description de la fonctionnalité",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+              "width": "",
+              "class": "",
+              "id": ""
+            },
+            "default_value": "",
+            "maxlength": "",
+            "rows": 2,
+            "allow_in_bindings": 0,
+            "placeholder": "Vous lancez la session quand vous voulez, où vous voulez.",
+            "new_lines": ""
+          }
+        ]
       }
     ],
     "location": [
@@ -1080,11 +847,62 @@
         "post_status": "",
         "taxonomy": "",
         "filters": ["search", "post_type", "taxonomy"],
-        "return_format": "object",
+        "return_format": "id",
         "min": 1,
         "max": 1,
         "elements": "",
-        "bidirectional_target": []
+        "bidirectional": 1,
+        "bidirectional_target": ["field_country_regions"]
+      },
+      {
+        "key": "field_region_departements",
+        "label": "Départements de cette région",
+        "name": "departements",
+        "aria-label": "",
+        "type": "relationship",
+        "instructions": "Ce champ est automatiquement rempli par la relation bidirectionnelle",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "post_type": ["departement"],
+        "post_status": "",
+        "taxonomy": "",
+        "filters": ["search", "post_type"],
+        "return_format": "id",
+        "min": 0,
+        "max": 0,
+        "elements": "",
+        "bidirectional": 1,
+        "bidirectional_target": ["field_690dc385c11cf"]
+      },
+      {
+        "key": "field_departement_villes",
+        "label": "Villes de ce département",
+        "name": "villes",
+        "aria-label": "",
+        "type": "relationship",
+        "instructions": "Ce champ est automatiquement rempli par la relation bidirectionnelle",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "post_type": ["ville"],
+        "post_status": "",
+        "taxonomy": "",
+        "filters": ["search", "post_type"],
+        "return_format": "id",
+        "min": 0,
+        "max": 0,
+        "elements": "",
+        "bidirectional": 1,
+        "bidirectional_target": ["field_690dc3a42cb41"]
       },
       {
         "key": "field_690e2db6eb47d",
@@ -1229,11 +1047,37 @@
         "post_status": "",
         "taxonomy": "",
         "filters": ["search", "post_type", "taxonomy"],
-        "return_format": "object",
+        "return_format": "id",
         "min": 1,
         "max": 1,
         "elements": "",
-        "bidirectional_target": []
+        "bidirectional": 1,
+        "bidirectional_target": ["field_departement_villes"]
+      },
+      {
+        "key": "field_ville_games",
+        "label": "Jeux de cette ville",
+        "name": "games",
+        "aria-label": "",
+        "type": "relationship",
+        "instructions": "Ce champ est automatiquement rempli par la relation bidirectionnelle avec les jeux",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "post_type": ["game"],
+        "post_status": "",
+        "taxonomy": "",
+        "filters": ["search", "post_type"],
+        "return_format": "id",
+        "min": 0,
+        "max": 0,
+        "elements": "",
+        "bidirectional": 1,
+        "bidirectional_target": ["field_690dc3f29d95a"]
       },
       {
         "key": "field_tab_ville_terrain",

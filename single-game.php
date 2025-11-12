@@ -178,6 +178,10 @@ do_action('hestia_before_single_post_wrapper');
 	$default_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
 	$image_principale_url = urbanquest_get_image_url(get_field('image_principale'), 'full', $default_image);
 	
+	// Overlay image principale
+	$default_overlay = get_stylesheet_directory_uri() . '/images/offre-urbanquest-ville-overlay.png';
+	$overlay_image_url = urbanquest_get_image_url(get_field('overlay_image_principale'), 'full', $default_overlay);
+	
 	// Titre principal
 	$titre_principal = urbanquest_get_field_with_default('titre_principal', 'Jouez quand vous voulez à ' . $ville_name);
 	$titre_principal = str_replace('[ville]', $ville_name, $titre_principal);
@@ -235,15 +239,25 @@ do_action('hestia_before_single_post_wrapper');
 	$pourquoi_choisir_titre = urbanquest_get_field_with_default('pourquoi_choisir_titre', 'Pourquoi choisir Urban Quest à [ville] ?');
 	$pourquoi_choisir_titre = str_replace('[ville]', $ville_name, $pourquoi_choisir_titre);
 	
-	// Galerie d'images (champs image multiples pour ACF gratuit)
+	// Galerie d'images (OPTIMISÉ : utilise le repeater ACF PRO)
 	$pourquoi_choisir_images = array();
-	for ($i = 1; $i <= 5; $i++) {
-		$image_field = get_field('pourquoi_choisir_image_' . $i);
-		if (!empty($image_field)) {
-			if (is_array($image_field) && isset($image_field['url'])) {
-				$pourquoi_choisir_images[] = $image_field['url'];
-			} elseif (is_numeric($image_field)) {
-				$img_url = wp_get_attachment_image_url($image_field, 'medium');
+	$images_repeater = get_field('pourquoi_choisir_images');
+	if ($images_repeater && is_array($images_repeater)) {
+		foreach ($images_repeater as $image_item) {
+			if (!empty($image_item['image'])) {
+				$img_url = urbanquest_get_image_url($image_item['image'], 'medium', '');
+				if ($img_url) {
+					$pourquoi_choisir_images[] = $img_url;
+				}
+			}
+		}
+	}
+	// Fallback pour compatibilité avec anciens champs (migration progressive)
+	if (empty($pourquoi_choisir_images)) {
+		for ($i = 1; $i <= 5; $i++) {
+			$image_field = get_field('pourquoi_choisir_image_' . $i);
+			if (!empty($image_field)) {
+				$img_url = urbanquest_get_image_url($image_field, 'medium', '');
 				if ($img_url) {
 					$pourquoi_choisir_images[] = $img_url;
 				}
@@ -254,7 +268,7 @@ do_action('hestia_before_single_post_wrapper');
 	$pourquoi_choisir_texte = urbanquest_get_field_with_default('pourquoi_choisir_texte', 'Un savant mélange jeu de piste, chasse au trésor et visite insolite : observation, logique, audace et stratégie vous feront grimper au classement, tout en (re)découvrant [ville] et ses lieux emblématiques.');
 	$pourquoi_choisir_texte = str_replace('[ville]', $ville_name, $pourquoi_choisir_texte);
 	
-	// Fonctionnalités avec valeurs par défaut (champs simples pour ACF gratuit)
+	// Fonctionnalités (OPTIMISÉ : utilise le repeater ACF PRO)
 	$default_features = array(
 		array(
 			'icone' => 'calendar-heart',
@@ -274,16 +288,41 @@ do_action('hestia_before_single_post_wrapper');
 	);
 	
 	$pourquoi_choisir_features = array();
-	for ($i = 1; $i <= 3; $i++) {
-		$icone = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_icone', $default_features[$i-1]['icone']);
-		$titre = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_titre', $default_features[$i-1]['titre']);
-		$description = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_description', $default_features[$i-1]['description']);
-		
-		$pourquoi_choisir_features[] = array(
-			'icone' => $icone,
-			'titre' => $titre,
-			'description' => $description
-		);
+	$features_repeater = get_field('pourquoi_choisir_features');
+	if ($features_repeater && is_array($features_repeater)) {
+		foreach ($features_repeater as $feature) {
+			$pourquoi_choisir_features[] = array(
+				'icone' => !empty($feature['icone']) ? $feature['icone'] : '',
+				'titre' => !empty($feature['titre']) ? $feature['titre'] : '',
+				'description' => !empty($feature['description']) ? $feature['description'] : ''
+			);
+		}
+	}
+	// Fallback pour compatibilité avec anciens champs (migration progressive)
+	if (empty($pourquoi_choisir_features)) {
+		for ($i = 1; $i <= 3; $i++) {
+			$icone = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_icone', $default_features[$i-1]['icone']);
+			$titre = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_titre', $default_features[$i-1]['titre']);
+			$description = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_description', $default_features[$i-1]['description']);
+			
+			$pourquoi_choisir_features[] = array(
+				'icone' => $icone,
+				'titre' => $titre,
+				'description' => $description
+			);
+		}
+	}
+	// Appliquer les valeurs par défaut si vides
+	foreach ($pourquoi_choisir_features as $index => &$feature) {
+		if (empty($feature['icone']) && isset($default_features[$index])) {
+			$feature['icone'] = $default_features[$index]['icone'];
+		}
+		if (empty($feature['titre']) && isset($default_features[$index])) {
+			$feature['titre'] = $default_features[$index]['titre'];
+		}
+		if (empty($feature['description']) && isset($default_features[$index])) {
+			$feature['description'] = $default_features[$index]['description'];
+		}
 	}
 	
 	// Le bouton utilise directement le bouton de paiement existant
@@ -313,8 +352,11 @@ do_action('hestia_before_single_post_wrapper');
 
 						<div class="game-sidebar-card">
 							<section class="game-card-section">
-								<div class="game-card-image" style="background-image: url('<?php echo esc_url($image_principale_url); ?>');">
-									<div class="game-price-badge-wrapper">
+								<div class="game-card-image" style="background-image: url('<?php echo esc_url($image_principale_url); ?>'); position: relative;">
+									<?php if ($overlay_image_url) : ?>
+										<img src="<?php echo esc_url($overlay_image_url); ?>" alt="Overlay Urban Quest" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 1;" />
+									<?php endif; ?>
+									<div class="game-price-badge-wrapper" style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 2;">
 										<div class="game-price-badge">
 											<?php if ($afficher_prix_original) : ?>
 												<span style="color: #1f2a37; font-size: 20px; text-decoration: line-through; font-weight: 500; opacity: 0.7;"><?php echo esc_html($prix_original); ?></span>
@@ -324,7 +366,7 @@ do_action('hestia_before_single_post_wrapper');
 									</div>
 								</div>
 								
-								<div style="text-align: center; margin-top: 35px; margin-bottom: 18px;">
+								<div style="text-align: center; margin-top: 50px; margin-bottom: 18px;">
 									<span style="color: #1f2a37; font-size: 20px; font-weight: bold;"><?php echo esc_html($titre_offre); ?></span>
 								</div>
 								
@@ -355,7 +397,7 @@ do_action('hestia_before_single_post_wrapper');
 										</ul>
 									</li>
 									<li style="list-style: none; display: center; align-items: flex-start; gap: 10px; width: 100%; margin: 0 auto; padding-top: 16px; padding-bottom: 24px;">
-										<div style="text-align: center;"><a href="<?php echo esc_url($button_href_button); ?>" target="_blank" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;" rel="noopener sponsored">Réserve ton jeu d'exploration</a></div></li>
+										<div style="text-align: center;"><a href="<?php echo esc_url($button_href_button); ?>" target="_blank" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;" rel="noopener sponsored">Réserve ton jeu d'exploration</a></div></li>
 								</ul>
 							</section>
 						</div>
@@ -373,25 +415,29 @@ do_action('hestia_before_single_post_wrapper');
 					<?php endif; ?>
 					<p style="text-align: center; max-width: 860px; margin: 0 auto;"><?php echo esc_html($pourquoi_choisir_texte); ?></p>
 
-					<div class="game-features-grid">
+					<div class="game-features-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; width: 100%;">
 						<?php foreach ($pourquoi_choisir_features as $feature) : 
 							$feature_icone = !empty($feature['icone']) ? $feature['icone'] : 'circle';
 							$feature_titre = !empty($feature['titre']) ? $feature['titre'] : '';
 							$feature_description = !empty($feature['description']) ? $feature['description'] : '';
 						?>
-						<div class="game-feature-card">
-							<i style="width: 40px; height: 40px; display: inline-block;" data-lucide="<?php echo esc_attr($feature_icone); ?>"></i>
-							<?php if (!empty($feature_titre)) : ?>
-								<strong><?php echo esc_html($feature_titre); ?></strong>
-							<?php endif; ?>
-							<?php if (!empty($feature_description)) : ?>
-								<?php echo esc_html($feature_description); ?>
-							<?php endif; ?>
+						<div class="game-feature-card" style="display: flex; align-items: flex-start; gap: 15px; background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px;">
+							<div style="flex-shrink: 0;">
+								<i style="width: 40px; height: 40px; display: block;" data-lucide="<?php echo esc_attr($feature_icone); ?>"></i>
+							</div>
+							<div style="flex: 1;">
+								<?php if (!empty($feature_titre)) : ?>
+									<strong style="display: block; color: #1f2a37; font-size: 16px; font-weight: bold; margin-bottom: 4px;"><?php echo esc_html($feature_titre); ?></strong>
+								<?php endif; ?>
+								<?php if (!empty($feature_description)) : ?>
+									<div style="color: #6b7280; font-size: 14px; line-height: 1.5;"><?php echo esc_html($feature_description); ?></div>
+								<?php endif; ?>
+							</div>
 						</div>
 						<?php endforeach; ?>
 					</div>
-					<div style="text-align: center; margin: 18px 0 6px;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+					<div style="text-align: center; margin: 30px 0 6px;">
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -415,15 +461,15 @@ do_action('hestia_before_single_post_wrapper');
 													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Pensez à prendre vos baskets!</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 0px solid #E6ECF4; width: 90%; margin: 0 auto;">
-												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">Typologie de jeu</div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Fun</div>
+												<div style="line-height: 1.25; width: 100%;">
+													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px; margin-bottom: 12px;">Typologie de jeu</div>
+													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Fun</div>
 													<?php echo urbanquest_render_jauge($jauge_fun); ?>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Histoire</div>
+													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Histoire</div>
 													<?php echo urbanquest_render_jauge($jauge_histoire); ?>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Réflexion</div>
+													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Réflexion</div>
 													<?php echo urbanquest_render_jauge($jauge_reflexion); ?>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Culture locale</div>
+													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Culture locale</div>
 													<?php echo urbanquest_render_jauge($jauge_culture_locale); ?>
 												</div></li>
 										</ul>
@@ -453,41 +499,13 @@ do_action('hestia_before_single_post_wrapper');
 					<p class="p1" style="text-align: center;">Choisis ton parcours, pars à l'aventure dans la ville et mesure-toi aux autres équipes.</p>
 					<p class="p1" style="text-align: center;">Une expérience fun, rapide à lancer et 100 % autonome !</p>
 					<p style="text-align: center;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
 					</p>
 
-					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
-
 					<?php if (!empty($related_games)) : ?>
+						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 						<h2 style="text-align: center; margin-bottom: 40px;">Jeux qui peuvent vous intéresser</h2>
-						<div class="row" style="margin-bottom: 60px;">
-							<?php foreach ($related_games as $related_game) : 
-								$game_data = urbanquest_get_game_display_data($related_game);
-							?>
-							<div class="col-md-4" style="margin-bottom: 30px;">
-								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-									<a href="<?php echo esc_url(get_permalink($related_game->ID)); ?>" style="text-decoration: none; color: inherit; display: block;">
-										<img src="<?php echo esc_url($game_data['image']); ?>" alt="<?php echo esc_attr($game_data['title']); ?>" style="width: 100%; height: 200px; object-fit: cover;" />
-										<div style="padding: 20px;">
-											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37;"><?php echo esc_html($game_data['title']); ?></h3>
-											<?php if ($game_data['city_name']) : ?>
-												<p style="margin: 0 0 10px; color: #6b7280; font-size: 14px; font-weight: 500;">
-													<i style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" data-lucide="map-pin"></i>
-													<?php echo esc_html($game_data['city_name']); ?>
-												</p>
-											<?php endif; ?>
-											<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5;"><?php echo esc_html(wp_trim_words($game_data['excerpt'], 20)); ?></p>
-											<div style="text-align: center;">
-												<span style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 8px 20px; border-radius: 999px; font-size: 14px;">
-													Découvrir le jeu
-												</span>
-											</div>
-										</div>
-									</a>
-								</div>
-							</div>
-							<?php endforeach; ?>
-						</div>
+						<?php urbanquest_display_games_grid($related_games, ['columns' => 3, 'show_city' => true]); ?>
 					<?php endif; ?>
 					
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -524,7 +542,7 @@ do_action('hestia_before_single_post_wrapper');
 					</table>
 					</div>
 					<div style="text-align: center;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />

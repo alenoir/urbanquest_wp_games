@@ -206,238 +206,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 		<div class="container">
 
 <?php if (have_posts()) : while (have_posts()) : the_post(); 
-	/**
-	 * Fonction helper pour extraire l'ID d'un champ ACF relationship
-	 * Selon acf.json, les champs relationship ont return_format: "object" et max: 1
-	 * @param mixed $field_value Valeur du champ ACF (peut être objet, tableau ou ID)
-	 * @return int|null ID extrait ou null
-	 */
-	function extract_acf_relationship_id($field_value) {
-		if (!$field_value) {
-			return null;
-		}
-		
-		// Si c'est un objet WP_Post (format attendu selon ACF config)
-		if (is_object($field_value) && isset($field_value->ID)) {
-			return $field_value->ID;
-		}
-		
-		// Si c'est un tableau (fallback pour compatibilité)
-		if (is_array($field_value) && !empty($field_value)) {
-			$first_item = $field_value[0];
-			if (is_object($first_item) && isset($first_item->ID)) {
-				return $first_item->ID;
-			}
-			if (is_numeric($first_item)) {
-				return $first_item;
-			}
-		}
-		
-		// Si c'est directement un ID numérique
-		if (is_numeric($field_value)) {
-			return $field_value;
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * Fonction helper pour récupérer tous les jeux de la France
-	 * @return array Tableau de jeux WP_Post
-	 */
-	function get_france_games() {
-		$games = array();
-		
-		try {
-			// 1. Trouver le pays "France"
-			$all_countries = get_posts(array(
-				'post_type' => 'country',
-				'posts_per_page' => -1,
-				'suppress_filters' => false
-			));
-			
-			$france_posts = array();
-			foreach ($all_countries as $country) {
-				if (stripos($country->post_title, 'France') !== false) {
-					$france_posts[] = $country;
-					break;
-				}
-			}
-			
-			if (empty($france_posts)) {
-				return $games;
-			}
-			
-			$france_id = $france_posts[0]->ID;
-			
-			// 2. Récupérer toutes les régions liées à la France
-			// Selon acf.json : region.countries → country (relationship, return_format: object, max: 1)
-			$all_regions = get_posts(array(
-				'post_type' => 'region',
-				'posts_per_page' => -1,
-				'suppress_filters' => false
-			));
-			
-			$region_ids = array();
-			foreach ($all_regions as $region) {
-				$country_field = get_field('countries', $region->ID);
-				$country_id = extract_acf_relationship_id($country_field);
-				
-				if ($country_id == $france_id) {
-					$region_ids[] = $region->ID;
-				}
-			}
-			
-			if (empty($region_ids)) {
-				return $games;
-			}
-			
-			// 3. Récupérer tous les départements de ces régions
-			$all_departements = get_posts(array(
-				'post_type' => 'departement',
-				'posts_per_page' => -1,
-				'suppress_filters' => false
-			));
-			
-			$departement_ids = array();
-			foreach ($all_departements as $departement) {
-				$region_field = get_field('region', $departement->ID);
-				$reg_id = extract_acf_relationship_id($region_field);
-				
-				if ($reg_id && in_array($reg_id, $region_ids)) {
-					$departement_ids[] = $departement->ID;
-				}
-			}
-			
-			if (empty($departement_ids)) {
-				return $games;
-			}
-			
-			// 4. Récupérer toutes les villes de ces départements
-			$all_villes = get_posts(array(
-				'post_type' => 'ville',
-				'posts_per_page' => -1,
-				'suppress_filters' => false
-			));
-			
-			$villes_ids = array();
-			foreach ($all_villes as $ville) {
-				$ville_departement_field = get_field('ville', $ville->ID);
-				$dep_id = extract_acf_relationship_id($ville_departement_field);
-				
-				if ($dep_id && in_array($dep_id, $departement_ids)) {
-					$villes_ids[] = $ville->ID;
-				}
-			}
-			
-			if (empty($villes_ids)) {
-				return $games;
-			}
-			
-			// 5. Récupérer tous les jeux de ces villes
-			$all_games = get_posts(array(
-				'post_type' => 'game',
-				'posts_per_page' => -1,
-				'suppress_filters' => false
-			));
-			
-			foreach ($all_games as $game) {
-				$city_field = get_field('city', $game->ID);
-				$city_id = extract_acf_relationship_id($city_field);
-				
-				if ($city_id && in_array($city_id, $villes_ids)) {
-					if (!in_array($game, $games, true)) {
-						$games[] = $game;
-					}
-				}
-			}
-		} catch (Exception $e) {
-			// En cas d'erreur, retourner un tableau vide
-			$games = array();
-		}
-		
-		return $games;
-	}
-	
-	/**
-	 * Fonction helper pour récupérer les données d'un jeu pour l'affichage dans les listes
-	 * Utilise les champs ACF personnalisés avec fallback sur les valeurs par défaut
-	 * @param WP_Post|int $game Le post du jeu ou son ID
-	 * @return array Tableau avec les données du jeu (image, titre, description, payment_url, city_name)
-	 */
-	function get_game_display_data($game) {
-		$game_id = is_object($game) ? $game->ID : $game;
-		
-		// Image : utilise image_principale ACF, sinon image_liste, sinon thumbnail, sinon image par défaut
-		$image_principale = get_field('image_principale', $game_id);
-		$game_image = '';
-		if ($image_principale) {
-			if (is_array($image_principale) && isset($image_principale['url'])) {
-				$game_image = $image_principale['url'];
-			} elseif (is_string($image_principale)) {
-				$game_image = $image_principale;
-			} elseif (is_numeric($image_principale)) {
-				$game_image = wp_get_attachment_image_url($image_principale, 'medium');
-			}
-		}
-		if (empty($game_image)) {
-			$image_liste = get_field('image_liste', $game_id);
-			if ($image_liste) {
-				if (is_array($image_liste) && isset($image_liste['url'])) {
-					$game_image = $image_liste['url'];
-				} elseif (is_string($image_liste)) {
-					$game_image = $image_liste;
-				} elseif (is_numeric($image_liste)) {
-					$game_image = wp_get_attachment_image_url($image_liste, 'medium');
-				}
-			}
-		}
-		if (empty($game_image)) {
-			$game_image = get_the_post_thumbnail_url($game_id, 'medium');
-		}
-		if (empty($game_image)) {
-			$game_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
-		}
-		
-		// Titre : utilise titre_liste ACF, sinon post_title
-		$titre_liste = get_field('titre_liste', $game_id);
-		$game_title = !empty($titre_liste) ? $titre_liste : get_the_title($game_id);
-		
-		// Description : utilise description_liste ACF, sinon excerpt, sinon texte par défaut
-		$description_liste = get_field('description_liste', $game_id);
-		$game_excerpt = !empty($description_liste) ? $description_liste : get_the_excerpt($game_id);
-		if (empty($game_excerpt)) {
-			$game_excerpt = 'Découvrez ce jeu de piste unique dans cette ville.';
-		}
-		
-		// URL de paiement
-		$payment_url = get_field('payment_url', $game_id);
-		if (empty($payment_url)) {
-			$payment_url = get_permalink($game_id);
-		}
-		
-		// Ville
-		$related_city = get_field('city', $game_id);
-		$related_city_name = '';
-		if ($related_city) {
-			if (is_object($related_city) && isset($related_city->post_title)) {
-				$related_city_name = $related_city->post_title;
-			} else {
-				$city_id = extract_acf_relationship_id($related_city);
-				if ($city_id) {
-					$related_city_name = get_the_title($city_id);
-				}
-			}
-		}
-		
-		return array(
-			'image' => $game_image,
-			'title' => $game_title,
-			'excerpt' => $game_excerpt,
-			'payment_url' => $payment_url,
-			'city_name' => $related_city_name
-		);
-	}
+	// Utiliser les fonctions centralisées de functions.php au lieu de les dupliquer
 	
 	// Réutiliser les variables définies avant get_header()
 	$region_id = get_the_ID();
@@ -459,85 +228,47 @@ do_action( 'hestia_before_single_post_wrapper' );
 		$region_description = "Découvrez la région " . esc_html($region_name) . " à travers nos jeux de piste connectés Urban Quest. Ce jeu de piste innovant vous permet d'explorer les plus belles villes et sites historiques de " . esc_html($region_name) . " de manière ludique et interactive. Partez à l'aventure en famille ou entre amis pour résoudre des énigmes passionnantes et vivre une expérience de jeu de piste unique.";
 	}
 	
-	// Récupérer tous les jeux de cette région via la chaîne de relations
-	// Région → Départements → Villes → Jeux
-	$games = array();
+	// Récupérer tous les jeux de cette région (OPTIMISÉ avec meta_query)
+	$games = urbanquest_get_games_by_region($region_id);
+	
+	// Récupérer les départements de la région pour l'affichage
 	$filtered_departements = array();
-	
-	try {
-		// 1. Récupérer tous les départements liés à cette région
-		$departements = get_posts(array(
-			'post_type' => 'departement',
-			'posts_per_page' => -1,
-			'suppress_filters' => false
-		));
-		
-		// Filtrer les départements qui ont cette région
-		// Selon acf.json : departement.region → region (relationship, return_format: object, max: 1)
-		if (!empty($departements)) {
-			foreach ($departements as $departement) {
-				$region_field = get_field('region', $departement->ID);
-				$reg_id = extract_acf_relationship_id($region_field);
-				
-				if ($reg_id == $region_id) {
-					$filtered_departements[] = $departement;
-				}
+	if ($region_id) {
+		// Utiliser la relation bidirectionnelle si disponible
+		$departements_ids = get_field('departements', $region_id);
+		if ($departements_ids) {
+			if (!is_array($departements_ids)) {
+				$departements_ids = [$departements_ids];
 			}
-		}
-		
-		// 2. Pour chaque département, récupérer les villes qui ont ce département dans leur champ 'ville'
-		// Selon acf.json : ville.ville → departement (relationship, return_format: object, max: 1)
-		$villes_ids = array();
-		$departement_ids = array();
-		foreach ($filtered_departements as $departement) {
-			$departement_ids[] = $departement->ID;
-		}
-		
-		// Récupérer toutes les villes et vérifier si elles sont liées à nos départements
-		$all_villes = get_posts(array(
-			'post_type' => 'ville',
-			'posts_per_page' => -1,
-			'suppress_filters' => false
-		));
-		
-		foreach ($all_villes as $ville) {
-			$ville_departement_field = get_field('ville', $ville->ID);
-			$dep_id = extract_acf_relationship_id($ville_departement_field);
-			
-			if ($dep_id && in_array($dep_id, $departement_ids)) {
-				$villes_ids[] = $ville->ID;
-			}
-		}
-		
-		// 3. Pour chaque ville, récupérer les jeux
-		// Selon acf.json : game.city → ville (relationship, return_format: object, max: 1)
-		$villes_ids = array_unique($villes_ids);
-		foreach ($villes_ids as $ville_id) {
-			$all_games = get_posts(array(
-				'post_type' => 'game',
+			$filtered_departements = get_posts([
+				'post_type' => 'departement',
+				'post__in' => array_map('intval', $departements_ids),
 				'posts_per_page' => -1,
-				'suppress_filters' => false
-			));
-			
-			foreach ($all_games as $game) {
-				$city_field = get_field('city', $game->ID);
-				$city_id = extract_acf_relationship_id($city_field);
-				
-				if ($city_id == $ville_id) {
-					if (!in_array($game, $games, true)) {
-						$games[] = $game;
-					}
-				}
+				'post_status' => 'publish'
+			]);
+		}
+		// Fallback avec meta_query
+		if (empty($filtered_departements)) {
+			$departements_ids = get_posts([
+				'post_type' => 'departement',
+				'posts_per_page' => -1,
+				'fields' => 'ids',
+				'meta_query' => [
+					[
+						'key' => 'region',
+						'value' => '"' . $region_id . '"',
+						'compare' => 'LIKE'
+					]
+				]
+			]);
+			if (!empty($departements_ids)) {
+				$filtered_departements = get_posts([
+					'post_type' => 'departement',
+					'post__in' => $departements_ids,
+					'posts_per_page' => -1
+				]);
 			}
 		}
-	} catch (Exception $e) {
-		// En cas d'erreur, utiliser les jeux de la France
-		$games = array();
-	}
-	
-	// Si aucun jeu trouvé pour cette région, récupérer tous les jeux de la France
-	if (empty($games)) {
-		$games = get_france_games();
 	}
 ?>
 		<article id="post-<?php the_ID(); ?>" <?php post_class('single-region-content'); ?>>
@@ -561,27 +292,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- Liste des jeux -->
 					<?php if (!empty($games)) : ?>
 						<h2 style="margin-bottom: 40px;">Jeu de piste en <?php echo esc_html($region_name); ?> - Nos aventures</h2>
-						<div class="row">
-							<?php 
-							foreach ($games as $game) : 
-								// Tous les jeux sont maintenant des vrais jeux (pas de fallback)
-								$game_id = is_object($game) ? $game->ID : $game;
-								$game_data = get_game_display_data($game);
-								$game_image = $game_data['image'];
-								$game_title = $game_data['title'];
-								$game_excerpt = $game_data['excerpt'];
-								$game_permalink = get_permalink($game_id);
-							?>
-							<div class="col-md-4" style="margin-bottom: 30px;">
-								<div style="text-align: center;">
-									<img src="<?php echo esc_url($game_image); ?>" alt="Jeu de piste connecté Urban Quest - <?php echo esc_attr($game_title); ?> à <?php echo esc_attr($game_data['city_name']); ?>" style="width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px;" loading="lazy" />
-									<h3 style="margin: 10px 0;"><?php echo esc_html($game_title); ?></h3>
-									<p style="margin-bottom: 20px;"><?php echo esc_html($game_excerpt); ?></p>
-									<a href="<?php echo esc_url($game_permalink); ?>" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px;">Découvrir le jeu</a>
-								</div>
-							</div>
-							<?php endforeach; ?>
-						</div>
+						<?php urbanquest_display_games_grid($games, ['columns' => 3, 'layout' => 'simple', 'show_city' => true]); ?>
 					<?php endif; ?>
 					
 					<!-- Liste des départements -->

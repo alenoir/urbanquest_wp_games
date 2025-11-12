@@ -144,29 +144,33 @@ function urbanquest_get_post_slug($post_id) {
 }
 
 /**
- * Fonction helper pour extraire l'ID d'un champ ACF relationship
+ * Fonction helper pour extraire l'ID d'un champ ACF relationship (OPTIMISÉ pour return_format: "id")
+ * Gère les formats : ID numérique (nouveau format optimisé), objet WP_Post, ou tableau
  */
 function urbanquest_extract_acf_relationship_id($field_value) {
 	if (!$field_value) {
 		return null;
 	}
 	
-	if (is_object($field_value) && isset($field_value->ID)) {
-		return $field_value->ID;
+	// Format ID numérique (nouveau format optimisé avec return_format: "id")
+	if (is_numeric($field_value)) {
+		return intval($field_value);
 	}
 	
+	// Format objet WP_Post (ancien format avec return_format: "object")
+	if (is_object($field_value) && isset($field_value->ID)) {
+		return intval($field_value->ID);
+	}
+	
+	// Format tableau (pour compatibilité)
 	if (is_array($field_value) && !empty($field_value)) {
 		$first_item = $field_value[0];
 		if (is_object($first_item) && isset($first_item->ID)) {
-			return $first_item->ID;
+			return intval($first_item->ID);
 		}
 		if (is_numeric($first_item)) {
-			return $first_item;
+			return intval($first_item);
 		}
-	}
-	
-	if (is_numeric($field_value)) {
-		return $field_value;
 	}
 	
 	return null;
@@ -1305,7 +1309,7 @@ function urbanquest_display_breadcrumb_simple() {
 	
 	// Générer le HTML du breadcrumb simple (juste des liens)
 	?>
-	<div class="urbanquest-breadcrumb-simple" style="margin: 10px 0 20px 0; font-size: 14px; color: #666;">
+	<div class="urbanquest-breadcrumb-simple" style="margin: 10px 30px 20px 30px; font-size: 14px; color: #666;">
 		<?php foreach ($items as $index => $item) : ?>
 			<?php if ($index > 0) : ?>
 				<span style="margin: 0 6px; color: #999;">›</span>
@@ -1872,6 +1876,7 @@ function urbanquest_get_game_location_data($game_id) {
 
 /**
  * Récupère les données d'affichage d'un jeu
+ * Utilise uniquement l'image principale et le titre du jeu
  * @param WP_Post|int $game Le post du jeu ou son ID
  * @return array ['image', 'title', 'excerpt', 'payment_url', 'city_name']
  */
@@ -1879,20 +1884,17 @@ function urbanquest_get_game_display_data($game) {
 	$game_id = is_object($game) ? $game->ID : $game;
 	$default_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
 	
-	// Image avec fallback
+	// Image : utilise uniquement image_principale, sinon thumbnail, sinon image par défaut
 	$image = urbanquest_get_image_url(get_field('image_principale', $game_id), 'medium', '');
-	if (empty($image)) {
-		$image = urbanquest_get_image_url(get_field('image_liste', $game_id), 'medium', '');
-	}
 	if (empty($image)) {
 		$image = get_the_post_thumbnail_url($game_id, 'medium') ?: $default_image;
 	}
 	
-	// Titre
-	$title = urbanquest_get_field_with_default('titre_liste', get_the_title($game_id), $game_id);
+	// Titre : utilise uniquement le titre du post
+	$title = get_the_title($game_id);
 	
-	// Description
-	$excerpt = urbanquest_get_field_with_default('description_liste', get_the_excerpt($game_id), $game_id);
+	// Description : utilise l'extrait du post
+	$excerpt = get_the_excerpt($game_id);
 	if (empty($excerpt)) {
 		$excerpt = 'Découvrez ce jeu de piste unique dans cette ville.';
 	}
@@ -1909,7 +1911,8 @@ function urbanquest_get_game_display_data($game) {
 }
 
 /**
- * Récupère les jeux pertinents selon la hiérarchie géographique
+ * Récupère les jeux pertinents selon la hiérarchie géographique (OPTIMISÉ)
+ * Utilise meta_query pour des requêtes SQL directes au lieu de boucles PHP
  * @param int $current_game_id ID du jeu actuel
  * @param int $ville_id ID de la ville
  * @param int $departement_id ID du département
@@ -1921,70 +1924,386 @@ function urbanquest_get_related_games($current_game_id, $ville_id, $departement_
 	$related_games = [];
 	$excluded_ids = [$current_game_id];
 	
-	// 1. Jeux de la même ville
+	// 1. Jeux de la même ville (OPTIMISÉ avec meta_query)
 	if ($ville_id) {
-		$all_games = get_posts(['post_type' => 'game', 'posts_per_page' => -1, 'post__not_in' => $excluded_ids]);
-		foreach ($all_games as $game) {
-			$city_id = urbanquest_extract_acf_relationship_id(get_field('city', $game->ID));
-			if ($city_id == $ville_id) {
-				$related_games[] = $game;
-				$excluded_ids[] = $game->ID;
-				if (count($related_games) >= $limit) return $related_games;
-			}
+		$games = get_posts([
+			'post_type' => 'game',
+			'posts_per_page' => $limit,
+			'post__not_in' => $excluded_ids,
+			'meta_query' => [
+				[
+					'key' => 'city',
+					'value' => '"' . $ville_id . '"',
+					'compare' => 'LIKE'
+				]
+			],
+			'orderby' => 'rand'
+		]);
+		
+		foreach ($games as $game) {
+			$related_games[] = $game;
+			$excluded_ids[] = $game->ID;
+		}
+		
+		if (count($related_games) >= $limit) {
+			return $related_games;
 		}
 	}
 	
-	// 2. Jeux du même département
+	// 2. Jeux du même département (OPTIMISÉ)
 	if (count($related_games) < $limit && $departement_id) {
-		$villes_departement = [];
-		foreach (get_posts(['post_type' => 'ville', 'posts_per_page' => -1]) as $ville) {
-			if (urbanquest_extract_acf_relationship_id(get_field('ville', $ville->ID)) == $departement_id) {
-				$villes_departement[] = $ville->ID;
-			}
-		}
+		// Récupérer les villes du département avec meta_query
+		$villes_departement = get_posts([
+			'post_type' => 'ville',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+			'meta_query' => [
+				[
+					'key' => 'ville',
+					'value' => '"' . $departement_id . '"',
+					'compare' => 'LIKE'
+				]
+			]
+		]);
 		
 		if (!empty($villes_departement)) {
-			foreach (get_posts(['post_type' => 'game', 'posts_per_page' => -1, 'post__not_in' => $excluded_ids]) as $game) {
-				$city_id = urbanquest_extract_acf_relationship_id(get_field('city', $game->ID));
-				if ($city_id && in_array($city_id, $villes_departement)) {
-					$related_games[] = $game;
-					$excluded_ids[] = $game->ID;
-					if (count($related_games) >= $limit) return $related_games;
-				}
+			// Construire une meta_query pour trouver les jeux de ces villes
+			$meta_query = ['relation' => 'OR'];
+			foreach ($villes_departement as $ville_id_dept) {
+				$meta_query[] = [
+					'key' => 'city',
+					'value' => '"' . $ville_id_dept . '"',
+					'compare' => 'LIKE'
+				];
+			}
+			
+			$games = get_posts([
+				'post_type' => 'game',
+				'posts_per_page' => $limit - count($related_games),
+				'post__not_in' => $excluded_ids,
+				'meta_query' => $meta_query,
+				'orderby' => 'rand'
+			]);
+			
+			foreach ($games as $game) {
+				$related_games[] = $game;
+				$excluded_ids[] = $game->ID;
+			}
+			
+			if (count($related_games) >= $limit) {
+				return $related_games;
 			}
 		}
 	}
 	
-	// 3. Jeux de la même région
+	// 3. Jeux de la même région (OPTIMISÉ)
 	if (count($related_games) < $limit && $region_id) {
-		$departements_region = [];
-		foreach (get_posts(['post_type' => 'departement', 'posts_per_page' => -1]) as $dep) {
-			if (urbanquest_extract_acf_relationship_id(get_field('region', $dep->ID)) == $region_id) {
-				$departements_region[] = $dep->ID;
-			}
-		}
+		// Récupérer les départements de la région
+		$departements_region = get_posts([
+			'post_type' => 'departement',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+			'meta_query' => [
+				[
+					'key' => 'region',
+					'value' => '"' . $region_id . '"',
+					'compare' => 'LIKE'
+				]
+			]
+		]);
 		
-		$villes_region = [];
 		if (!empty($departements_region)) {
-			foreach (get_posts(['post_type' => 'ville', 'posts_per_page' => -1]) as $ville) {
-				if (in_array(urbanquest_extract_acf_relationship_id(get_field('ville', $ville->ID)), $departements_region)) {
-					$villes_region[] = $ville->ID;
-				}
+			// Récupérer les villes de ces départements
+			$meta_query_villes = ['relation' => 'OR'];
+			foreach ($departements_region as $dep_id) {
+				$meta_query_villes[] = [
+					'key' => 'ville',
+					'value' => '"' . $dep_id . '"',
+					'compare' => 'LIKE'
+				];
 			}
-		}
-		
-		if (!empty($villes_region)) {
-			foreach (get_posts(['post_type' => 'game', 'posts_per_page' => -1, 'post__not_in' => $excluded_ids]) as $game) {
-				$city_id = urbanquest_extract_acf_relationship_id(get_field('city', $game->ID));
-				if ($city_id && in_array($city_id, $villes_region)) {
+			
+			$villes_region = get_posts([
+				'post_type' => 'ville',
+				'posts_per_page' => -1,
+				'fields' => 'ids',
+				'meta_query' => $meta_query_villes
+			]);
+			
+			if (!empty($villes_region)) {
+				// Récupérer les jeux de ces villes
+				$meta_query_games = ['relation' => 'OR'];
+				foreach ($villes_region as $ville_id_reg) {
+					$meta_query_games[] = [
+						'key' => 'city',
+						'value' => '"' . $ville_id_reg . '"',
+						'compare' => 'LIKE'
+					];
+				}
+				
+				$games = get_posts([
+					'post_type' => 'game',
+					'posts_per_page' => $limit - count($related_games),
+					'post__not_in' => $excluded_ids,
+					'meta_query' => $meta_query_games,
+					'orderby' => 'rand'
+				]);
+				
+				foreach ($games as $game) {
 					$related_games[] = $game;
-					if (count($related_games) >= $limit) return $related_games;
 				}
 			}
 		}
 	}
 	
 	return $related_games;
+}
+
+/**
+ * Récupère les jeux d'une ville (OPTIMISÉ avec meta_query)
+ * @param int $ville_id ID de la ville
+ * @param array $args Arguments WP_Query additionnels
+ * @return array Tableau de jeux WP_Post
+ */
+function urbanquest_get_games_by_city($ville_id, $args = []) {
+	if (!$ville_id) {
+		return [];
+	}
+	
+	$defaults = [
+		'post_type' => 'game',
+		'posts_per_page' => -1,
+		'post_status' => 'publish',
+		'meta_query' => [
+			[
+				'key' => 'city',
+				'value' => '"' . $ville_id . '"',
+				'compare' => 'LIKE'
+			]
+		]
+	];
+	
+	$query_args = wp_parse_args($args, $defaults);
+	return get_posts($query_args);
+}
+
+/**
+ * Récupère les jeux d'un département (OPTIMISÉ)
+ * @param int $departement_id ID du département
+ * @param array $args Arguments WP_Query additionnels
+ * @return array Tableau de jeux WP_Post
+ */
+function urbanquest_get_games_by_departement($departement_id, $args = []) {
+	if (!$departement_id) {
+		return [];
+	}
+	
+	// Récupérer les villes du département
+	$villes = get_posts([
+		'post_type' => 'ville',
+		'posts_per_page' => -1,
+		'fields' => 'ids',
+		'meta_query' => [
+			[
+				'key' => 'ville',
+				'value' => '"' . $departement_id . '"',
+				'compare' => 'LIKE'
+			]
+		]
+	]);
+	
+	if (empty($villes)) {
+		return [];
+	}
+	
+	// Construire meta_query pour les jeux
+	$meta_query = ['relation' => 'OR'];
+	foreach ($villes as $ville_id) {
+		$meta_query[] = [
+			'key' => 'city',
+			'value' => '"' . $ville_id . '"',
+			'compare' => 'LIKE'
+		];
+	}
+	
+	$defaults = [
+		'post_type' => 'game',
+		'posts_per_page' => -1,
+		'post_status' => 'publish',
+		'meta_query' => $meta_query
+	];
+	
+	$query_args = wp_parse_args($args, $defaults);
+	return get_posts($query_args);
+}
+
+/**
+ * Récupère les jeux d'une région (OPTIMISÉ)
+ * @param int $region_id ID de la région
+ * @param array $args Arguments WP_Query additionnels
+ * @return array Tableau de jeux WP_Post
+ */
+function urbanquest_get_games_by_region($region_id, $args = []) {
+	if (!$region_id) {
+		return [];
+	}
+	
+	// Récupérer les départements de la région
+	$departements = get_posts([
+		'post_type' => 'departement',
+		'posts_per_page' => -1,
+		'fields' => 'ids',
+		'meta_query' => [
+			[
+				'key' => 'region',
+				'value' => '"' . $region_id . '"',
+				'compare' => 'LIKE'
+			]
+		]
+	]);
+	
+	if (empty($departements)) {
+		return [];
+	}
+	
+	// Récupérer les villes de ces départements
+	$meta_query_villes = ['relation' => 'OR'];
+	foreach ($departements as $dep_id) {
+		$meta_query_villes[] = [
+			'key' => 'ville',
+			'value' => '"' . $dep_id . '"',
+			'compare' => 'LIKE'
+		];
+	}
+	
+	$villes = get_posts([
+		'post_type' => 'ville',
+		'posts_per_page' => -1,
+		'fields' => 'ids',
+		'meta_query' => $meta_query_villes
+	]);
+	
+	if (empty($villes)) {
+		return [];
+	}
+	
+	// Construire meta_query pour les jeux
+	$meta_query_games = ['relation' => 'OR'];
+	foreach ($villes as $ville_id) {
+		$meta_query_games[] = [
+			'key' => 'city',
+			'value' => '"' . $ville_id . '"',
+			'compare' => 'LIKE'
+		];
+	}
+	
+	$defaults = [
+		'post_type' => 'game',
+		'posts_per_page' => -1,
+		'post_status' => 'publish',
+		'meta_query' => $meta_query_games
+	];
+	
+	$query_args = wp_parse_args($args, $defaults);
+	return get_posts($query_args);
+}
+
+/**
+ * Affiche une carte de jeu réutilisable
+ * @param WP_Post|int $game Le post du jeu ou son ID
+ * @param array $args Arguments d'affichage (voir template-parts/game-card.php)
+ */
+function urbanquest_display_game_card($game, $args = []) {
+	$template_path = locate_template('template-parts/game-card.php');
+	if ($template_path) {
+		include $template_path;
+	} else {
+		// Fallback si le template n'existe pas
+		$game_id = is_object($game) ? $game->ID : $game;
+		$game_data = urbanquest_get_game_display_data($game_id);
+		$game_permalink = get_permalink($game_id);
+		
+		echo '<div class="urbanquest-game-card-fallback">';
+		echo '<a href="' . esc_url($game_permalink) . '">';
+		echo '<h3>' . esc_html($game_data['title']) . '</h3>';
+		echo '</a>';
+		echo '</div>';
+	}
+}
+
+/**
+ * Récupère les jeux d'un pays (OPTIMISÉ)
+ * @param int $country_id ID du pays
+ * @param array $args Arguments WP_Query additionnels
+ * @return array Tableau de jeux WP_Post
+ */
+function urbanquest_get_games_by_country($country_id, $args = []) {
+	if (!$country_id) {
+		return [];
+	}
+	
+	// Récupérer les régions du pays
+	$regions = get_posts([
+		'post_type' => 'region',
+		'posts_per_page' => -1,
+		'fields' => 'ids',
+		'meta_query' => [
+			[
+				'key' => 'countries',
+				'value' => '"' . $country_id . '"',
+				'compare' => 'LIKE'
+			]
+		]
+	]);
+	
+	if (empty($regions)) {
+		return [];
+	}
+	
+	// Utiliser la fonction pour récupérer les jeux de toutes ces régions
+	$all_games = [];
+	foreach ($regions as $region_id) {
+		$region_games = urbanquest_get_games_by_region($region_id);
+		foreach ($region_games as $game) {
+			if (!in_array($game, $all_games, true)) {
+				$all_games[] = $game;
+			}
+		}
+	}
+	
+	return $all_games;
+}
+
+/**
+ * Affiche une grille de cartes de jeux
+ * @param array $games Tableau de jeux WP_Post
+ * @param array $args Arguments d'affichage
+ *   - 'columns' => int (défaut: 3) - Nombre de colonnes
+ *   - 'layout' => string (défaut: 'card') - Layout des cartes
+ *   - 'show_city' => bool (défaut: true)
+ */
+function urbanquest_display_games_grid($games, $args = []) {
+	if (empty($games)) {
+		return;
+	}
+	
+	$defaults = [
+		'columns' => 3,
+		'layout' => 'card',
+		'show_city' => true,
+		'excerpt_length' => 20
+	];
+	
+	$args = wp_parse_args($args, $defaults);
+	$col_class = 'col-md-' . (12 / $args['columns']);
+	
+	echo '<div class="row urbanquest-games-grid" style="margin-bottom: 60px;">';
+	foreach ($games as $game) {
+		echo '<div class="' . esc_attr($col_class) . '" style="margin-bottom: 30px;">';
+		urbanquest_display_game_card($game, $args);
+		echo '</div>';
+	}
+	echo '</div>';
 }
 
 /**
@@ -1999,9 +2318,9 @@ function urbanquest_render_jauge($valeur, $label = '') {
 	
 	ob_start();
 	?>
-	<div style="position: relative; width: 100%; height: 16px;">
-		<div style="position: relative; width: 100%; height: 100%; border-radius: 10px; overflow: visible; background: white;">
-			<div style="position: absolute; top: 0; left: 0; width: <?php echo esc_attr($pourcentage); ?>; height: 100%; background: #87CEEB; border-radius: 10px; z-index: 1;"></div>
+	<div style="position: relative; width: 100%; height: 10px; margin-top: 8px;">
+		<div style="position: relative; width: 100%; height: 100%; border-radius: 10px; overflow: visible; background: white; border: 1px solid #E6ECF4;">
+			<div style="position: absolute; top: 0; left: 0; width: <?php echo esc_attr($pourcentage); ?>; height: 100%; background: #00bbff; border-radius: 10px; z-index: 1;"></div>
 			<div style="position: absolute; top: 0; left: <?php echo esc_attr($pourcentage); ?>; width: <?php echo esc_attr((100 - $valeur) . '%'); ?>; height: 100%; background: white; border-radius: <?php echo ($valeur <= 0) ? '10px' : '0 10px 10px 0'; ?>; z-index: 1;"></div>
 		</div>
 	</div>
@@ -2025,7 +2344,6 @@ function urbanquest_get_ai_field_config() {
 	// Valeurs par défaut
 	$defaults = array(
 		'field_game_description_principale' => 'Tu es un expert en rédaction web SEO. Écris une description principale accrocheuse et engageante pour un jeu de piste urbain appelé "{titre}" dans la ville de "{ville}". La description doit être de 150-200 mots, convaincante, mettre en avant l\'aspect ludique et l\'expérience unique. Utilise un ton enthousiaste mais professionnel. Format HTML avec paragraphes.',
-		'field_game_description_liste' => 'Écris une description courte (80-100 mots) pour un jeu de piste "{titre}" à {ville}. Description accrocheuse pour les listes de jeux, mettant en avant les points forts.',
 		'field_city_description_terrain_de_jeu' => 'Écris une description engageante (150-200 mots) expliquant comment {ville} devient un terrain de jeu avec Urban Quest. Mettez en avant l\'aspect exploration, découverte et expérience immersive. Format HTML avec paragraphes.',
 		'field_city_description_jeu_unique' => 'Écris une description (150-200 mots) expliquant pourquoi Urban Quest est un jeu de piste unique à {ville}. Mettez en avant l\'aspect culturel, historique et ludique. Format HTML avec paragraphes.',
 		'field_690e2db6eb47d' => 'Écris une description de région (150-200 mots) pour {titre}. Mettez en avant les caractéristiques géographiques, culturelles et touristiques de la région. Format HTML avec paragraphes.',
@@ -2089,7 +2407,6 @@ function urbanquest_openai_settings_page() {
 	// Labels lisibles pour les champs
 	$field_labels = array(
 		'field_game_description_principale' => 'Description principale du jeu',
-		'field_game_description_liste' => 'Description liste du jeu',
 		'field_city_description_terrain_de_jeu' => 'Description terrain de jeu (ville)',
 		'field_city_description_jeu_unique' => 'Description jeu unique (ville)',
 		'field_690e2db6eb47d' => 'Description région',
