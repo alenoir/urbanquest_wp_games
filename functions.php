@@ -24,17 +24,6 @@ endif;
 
 add_action( 'wp_enqueue_scripts', 'chld_thm_cfg_parent_css', 10 );
 
-// Enqueue styles responsives Urban Quest
-if ( !function_exists( 'urbanquest_enqueue_responsive_styles' ) ):
-    function urbanquest_enqueue_responsive_styles() {
-        wp_enqueue_style( 
-            'urbanquest-responsive', 
-            get_stylesheet_directory_uri() . '/urbanquest-responsive.css', 
-            array( 'chld_thm_cfg_parent' ), 
-            '1.1.0' 
-        );
-    }
-endif;
 
 add_action( 'wp_enqueue_scripts', 'urbanquest_enqueue_responsive_styles', 20 );
 
@@ -2677,7 +2666,7 @@ function urbanquest_enqueue_acf_ai_scripts($hook) {
 		'urbanquest-acf-ai',
 		get_stylesheet_directory_uri() . '/js/acf-ai-generate.js',
 		array('jquery', 'acf-input'),
-		'1.3.0', // Version mise à jour pour forcer le rechargement
+		'1.4.0', // Version mise à jour pour forcer le rechargement
 		true
 	);
 	
@@ -2685,7 +2674,7 @@ function urbanquest_enqueue_acf_ai_scripts($hook) {
 		'urbanquest-acf-ai',
 		get_stylesheet_directory_uri() . '/css/acf-ai-generate.css',
 		array(),
-		'1.3.0' // Version mise à jour pour forcer le rechargement
+		'1.4.0' // Version mise à jour pour forcer le rechargement
 	);
 	
 	// Passer les données au JavaScript
@@ -2702,3 +2691,109 @@ function urbanquest_enqueue_acf_ai_scripts($hook) {
 	));
 }
 add_action('admin_enqueue_scripts', 'urbanquest_enqueue_acf_ai_scripts');
+
+// ============================================================================
+// INITIALISATION PAR DÉFAUT DES FONCTIONNALITÉS POUR LES NOUVEAUX JEUX
+// ============================================================================
+// Initialise automatiquement 3 fonctionnalités par défaut dans le champ
+// "pourquoi_choisir_features" lors de la création d'un nouveau jeu
+// ============================================================================
+
+/**
+ * Initialise les fonctionnalités par défaut pour un nouveau jeu
+ * Utilise le hook acf/load_value pour charger les valeurs par défaut si le champ est vide
+ */
+function urbanquest_init_default_features($value, $post_id, $field) {
+	// Ne s'applique qu'au champ pourquoi_choisir_features
+	if ($field['name'] !== 'pourquoi_choisir_features') {
+		return $value;
+	}
+	
+	// Si le champ a déjà une valeur, ne pas l'écraser
+	if (!empty($value) && is_array($value) && count($value) > 0) {
+		return $value;
+	}
+	
+	// Vérifier si c'est un post de type 'game'
+	// Pour les nouveaux posts, $post_id peut être "new_post" ou un ID numérique
+	$post_type = '';
+	if (is_numeric($post_id)) {
+		$post = get_post($post_id);
+		if ($post) {
+			$post_type = $post->post_type;
+		}
+	} else {
+		// Pour les nouveaux posts, vérifier le type depuis la requête globale
+		global $typenow;
+		if (isset($typenow) && $typenow === 'game') {
+			$post_type = 'game';
+		}
+	}
+	
+	// Ne s'applique qu'aux posts de type 'game'
+	if ($post_type !== 'game') {
+		return $value;
+	}
+	
+	// Valeurs par défaut des 3 fonctionnalités
+	$default_features = array(
+		array(
+			'icone' => 'calendar-heart',
+			'titre' => '100% libre',
+			'description' => 'Vous lancez la session quand vous voulez, où vous voulez.'
+		),
+		array(
+			'icone' => 'smartphone',
+			'titre' => 'Ultra simple',
+			'description' => 'Vos instructions de jeu par e-mail, votre smartphone… c\'est tout.'
+		),
+		array(
+			'icone' => 'swords',
+			'titre' => 'Fun & challenge',
+			'description' => 'Défis variés, énigmes malignes, score et classement.'
+		)
+	);
+	
+	return $default_features;
+}
+add_filter('acf/load_value/name=pourquoi_choisir_features', 'urbanquest_init_default_features', 10, 3);
+
+/**
+ * Initialise les fonctionnalités par défaut lors de la sauvegarde d'un nouveau jeu
+ * Utilise le hook acf/save_post pour s'assurer que les valeurs sont sauvegardées
+ */
+function urbanquest_save_default_features($post_id) {
+	// Ne s'applique qu'aux posts de type 'game'
+	$post = get_post($post_id);
+	if (!$post || $post->post_type !== 'game') {
+		return;
+	}
+	
+	// Vérifier si le champ existe et est vide
+	$features = get_field('pourquoi_choisir_features', $post_id);
+	
+	// Si le champ est vide ou n'existe pas, initialiser avec les valeurs par défaut
+	if (empty($features) || !is_array($features) || count($features) === 0) {
+		$default_features = array(
+			array(
+				'icone' => 'calendar-heart',
+				'titre' => '100% libre',
+				'description' => 'Vous lancez la session quand vous voulez, où vous voulez.'
+			),
+			array(
+				'icone' => 'smartphone',
+				'titre' => 'Ultra simple',
+				'description' => 'Vos instructions de jeu par e-mail, votre smartphone… c\'est tout.'
+			),
+			array(
+				'icone' => 'swords',
+				'titre' => 'Fun & challenge',
+				'description' => 'Défis variés, énigmes malignes, score et classement.'
+			)
+		);
+		
+		// Sauvegarder les valeurs par défaut
+		update_field('pourquoi_choisir_features', $default_features, $post_id);
+	}
+}
+add_action('acf/save_post', 'urbanquest_save_default_features', 20);

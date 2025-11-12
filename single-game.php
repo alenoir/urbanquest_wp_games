@@ -139,13 +139,14 @@ get_header();
 do_action('hestia_before_single_post_wrapper');
 ?>
 <style>
+
 	/* Styles pour la sidebar de jeu */
 	.game-card-image {
 		width: 100%;
-		height: 180px;
+		height: 250px;
 		background-size: cover;
 		background-position: center;
-		border-radius: 12px ;
+		border-radius: 22px ;
 		overflow: visible;
 		position: relative;
 		margin: 0;
@@ -160,7 +161,7 @@ do_action('hestia_before_single_post_wrapper');
 	}
 	
 	.game-price-badge {
-		background: #FFD700;
+		background: #F5EA4D;
 		padding: 10px 20px;
 		border-radius: 999px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -170,6 +171,22 @@ do_action('hestia_before_single_post_wrapper');
 		white-space: nowrap;
 		min-width: 120px;
 		justify-content: center;
+	}
+
+	.game-main-content {
+		font-size: 16px;
+	}
+	
+	/* Taille de police pour le contenu texte uniquement (pas les titres) */
+	.single-game-content p,
+	.single-game-content div,
+	.single-game-content span,
+	.single-game-content li,
+	.single-game-content td,
+	.single-game-content a,
+	.single-game-content strong,
+	.single-game-content em {
+		font-size: 16px;
 	}
 	
 	/* Layout responsive pour les pages de jeu */
@@ -378,8 +395,8 @@ do_action('hestia_before_single_post_wrapper');
 					} ?>
 					
 					<div class="row game-main-layout" style="margin-bottom: 60px;">
-						<div class="col-md-8 game-main-content">
-							<h2><?php echo esc_html($titre_principal); ?></h2>
+						<div class="col-md-6 game-main-content">
+							<h2 style="line-height: 1.2;"><?php echo esc_html($titre_principal); ?></h2>
 							
 							<?php if (!empty($description_principale)) : ?>
 								<div class="description-principale"><?php echo wp_kses_post($description_principale); ?></div>
@@ -393,8 +410,8 @@ do_action('hestia_before_single_post_wrapper');
 							<p>Nos jeux sont conçus à la main par des game designers, en lien direct avec l'histoire et la géographie de <?php echo esc_html($ville_name); ?>... pour une expérience authentique et unique.</p>
 						</div>
 
-						<div class="col-md-4 game-sidebar-card" style="position: sticky; top: 20px;">
-							<section class="game-card-section" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px; overflow: visible;">
+						<div class="col-md-6 game-sidebar-card" style="position: sticky; top: 20px;">
+							<section class="game-card-section" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 44px; padding: 20px; overflow: visible;">
 								<div class="game-card-image" style="background-image: url('<?php echo esc_url($image_principale_url); ?>');">
 									<?php if ($overlay_image_url) : ?>
 										<img src="<?php echo esc_url($overlay_image_url); ?>" alt="Overlay Urban Quest" style="position: absolute; top: 0; left: 0; width: 100%;  pointer-events: none; z-index: 1;" />
@@ -410,7 +427,7 @@ do_action('hestia_before_single_post_wrapper');
 								</div>
 								
 								<div style="text-align: center; margin-top: 40px; margin-bottom: 18px;">
-									<span style="color: #1f2a37; font-size: 20px; font-weight: bold;"><?php echo esc_html($titre_offre); ?></span>
+									<span style="color: #1f2a37; font-size: 16px; font-weight: bold;"><?php echo esc_html($titre_offre); ?></span>
 								</div>
 								
 								<img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/10/made-in-france-1.png'); ?>" alt="Made in France - Jeu de piste Urban Quest fabriqué en France" width="234" height="19" class="wp-image-26996 size-full aligncenter" loading="lazy" />
@@ -419,23 +436,23 @@ do_action('hestia_before_single_post_wrapper');
 										<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto; padding-top: 16px;"><i style="width: 28px; height: 28px; display: inline-block;" data-lucide="users"></i>
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($nombre_joueurs); ?></div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;"><?php echo esc_html($age_minimum); ?></div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 16px; letter-spacing: 0.2px;"><?php echo esc_html($nombre_joueurs); ?></div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 6px; font-weight: 500;"><?php echo esc_html($age_minimum); ?></div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto;"><i style="width: 28px; height: 28px; display: inline-block;" data-lucide="clock"></i>
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($duree); ?></div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">pour enchaîner les défis</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 16px; letter-spacing: 0.2px;"><?php echo esc_html($duree); ?></div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 6px; font-weight: 500;">pour enchaîner les défis</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto;"><i style="width: 28px; height: 28px; display: inline-block;" data-lucide="smartphone"></i>
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">Votre smartphone</div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">suffit pour jouer</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 16px; letter-spacing: 0.2px;">Votre smartphone</div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 6px; font-weight: 500;">suffit pour jouer</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; width: 90%; margin: 0 auto;"><i style="width: 28px; height: 28px; display: inline-block;" data-lucide="trophy"></i>
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;">Classement général</div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Comparez votre score aux autres joueurs</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 16px; letter-spacing: 0.2px;">Classement général</div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 6px; font-weight: 500;">Comparez votre score aux autres joueurs</div>
 												</div></li>
 										</ul>
 									</li>
@@ -458,7 +475,7 @@ do_action('hestia_before_single_post_wrapper');
 					<?php endif; ?>
 					<p style="text-align: center; max-width: 860px; margin: 0 auto;"><?php echo esc_html($pourquoi_choisir_texte); ?></p>
 
-					<div class="game-features-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; width: 100%;">
+					<div class="game-features-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; width: 100%; margin-top: 30px;">
 						<?php foreach ($pourquoi_choisir_features as $feature) : 
 							$feature_icone = !empty($feature['icone']) ? $feature['icone'] : 'circle';
 							$feature_titre = !empty($feature['titre']) ? $feature['titre'] : '';
@@ -480,39 +497,39 @@ do_action('hestia_before_single_post_wrapper');
 						<?php endforeach; ?>
 					</div>
 					<div style="text-align: center; margin: 30px 0 6px;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
 					<div class="row game-info-section" style="margin-bottom: 60px;">
 						<div class="col-md-4 game-info-sidebar" style="position: sticky; top: 20px;">
-							<section class="game-card-section" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px;">
+							<section class="game-card-section" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 44px; padding: 20px;">
 								<h3 style="text-align: left;"><?php echo esc_html($titre_section_infos); ?></h3>
 								<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 									<li style="list-style-type: none;">
 										<ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 18px;">
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto; padding-top: 16px;">
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($tranche_age); ?></div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Tant que marcher <?php echo esc_html($duree_minutes); ?> min n'est pas un challenger pour vous</div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Nous avons aussi des jeux conçus spécialement pour les kids</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 16px; letter-spacing: 0.2px;"><?php echo esc_html($tranche_age); ?></div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 6px; font-weight: 500;">Tant que marcher <?php echo esc_html($duree_minutes); ?> min n'est pas un challenger pour vous</div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 6px; font-weight: 500;">Nous avons aussi des jeux conçus spécialement pour les kids</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #E6ECF4; width: 90%; margin: 0 auto;">
 												<div style="line-height: 1.25;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px;"><?php echo esc_html($distance); ?></div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 6px; font-weight: 500;">Pensez à prendre vos baskets!</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 16px; letter-spacing: 0.2px;"><?php echo esc_html($distance); ?></div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 6px; font-weight: 500;">Pensez à prendre vos baskets!</div>
 												</div></li>
 											<li style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 18px; border-bottom: 0px solid #E6ECF4; width: 90%; margin: 0 auto;">
 												<div style="line-height: 1.25; width: 100%;">
-													<div style="color: #1f2a37; font-weight: bold; font-size: 18px; letter-spacing: 0.2px; margin-bottom: 12px;">Typologie de jeu</div>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Fun</div>
+													<div style="color: #1f2a37; font-weight: bold; font-size: 16px; letter-spacing: 0.2px; margin-bottom: 12px;">Typologie de jeu</div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 12px; font-weight: 500;">Fun</div>
 													<?php echo urbanquest_render_jauge($jauge_fun); ?>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Histoire</div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 12px; font-weight: 500;">Histoire</div>
 													<?php echo urbanquest_render_jauge($jauge_histoire); ?>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Réflexion</div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 12px; font-weight: 500;">Réflexion</div>
 													<?php echo urbanquest_render_jauge($jauge_reflexion); ?>
-													<div style="color: #6b7280; font-size: 14px; margin-top: 12px; font-weight: 500;">Culture locale</div>
+													<div style="color: #6b7280; font-size: 16px; margin-top: 12px; font-weight: 500;">Culture locale</div>
 													<?php echo urbanquest_render_jauge($jauge_culture_locale); ?>
 												</div></li>
 										</ul>
@@ -539,10 +556,10 @@ do_action('hestia_before_single_post_wrapper');
 
 					<h2 style="text-align: center;">Comment se déroule une partie ?</h2>
 					<p style="text-align: center;"><img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/08/newUQderoulement-2.png'); ?>" alt="Déroulement d'une partie Urban Quest - Comment jouer au jeu de piste" width="760" height="231" class="aligncenter size-full wp-image-26861" loading="lazy" /></p>
-					<p class="p1" style="text-align: center;">Choisis ton parcours, pars à l'aventure dans la ville et mesure-toi aux autres équipes.</p>
-					<p class="p1" style="text-align: center;">Une expérience fun, rapide à lancer et 100 % autonome !</p>
+					<p class="p1" style="text-align: center; font-size: 16px;">Choisis ton parcours, pars à l'aventure dans la ville et mesure-toi aux autres équipes.</p>
+					<p class="p1" style="text-align: center; font-size: 16px;">Une expérience fun, rapide à lancer et 100 % autonome !</p>
 					<p style="text-align: center;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
 					</p>
 
 					<?php if (!empty($related_games)) : ?>
@@ -584,8 +601,8 @@ do_action('hestia_before_single_post_wrapper');
 						</tbody>
 					</table>
 					</div>
-					<div style="text-align: center;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+					<div style="text-align: center; padding-top: 30px;">
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -595,7 +612,7 @@ do_action('hestia_before_single_post_wrapper');
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
 
-					<p style="font-size: 13px; color: #666; margin-top: 8px;">Besoin d'aide ? <a href="mailto:contact@urbanquest.fr">contact@urbanquest.fr</a> · <a href="tel:+33540248279">05 40 24 82 79</a></p>
+					<p style="font-size: 16px; color: #666; margin-top: 8px;">Besoin d'aide ? <a href="mailto:contact@urbanquest.fr">contact@urbanquest.fr</a> · <a href="tel:+33540248279">05 40 24 82 79</a></p>
 
 				</div>
 			</div>
