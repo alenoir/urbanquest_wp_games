@@ -2138,39 +2138,67 @@ function urbanquest_get_games_by_region($region_id, $args = []) {
 	}
 	
 	// Récupérer les départements de la région
-	$departements = get_posts([
-		'post_type' => 'departement',
-		'posts_per_page' => -1,
-		'fields' => 'ids',
-		'meta_query' => [
-			[
-				'key' => 'region',
-				'value' => '"' . $region_id . '"',
-				'compare' => 'LIKE'
+	// Utiliser d'abord la relation bidirectionnelle si disponible
+	$departements_ids = get_field('departements', $region_id);
+	if ($departements_ids) {
+		if (!is_array($departements_ids)) {
+			$departements_ids = [$departements_ids];
+		}
+		$departements = array_map('intval', $departements_ids);
+	} else {
+		// Fallback avec meta_query
+		$departements = get_posts([
+			'post_type' => 'departement',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+			'meta_query' => [
+				[
+					'key' => 'region',
+					'value' => '"' . $region_id . '"',
+					'compare' => 'LIKE'
+				]
 			]
-		]
-	]);
+		]);
+	}
 	
 	if (empty($departements)) {
 		return [];
 	}
 	
 	// Récupérer les villes de ces départements
-	$meta_query_villes = ['relation' => 'OR'];
+	// Utiliser d'abord la relation bidirectionnelle si disponible
+	$villes = [];
 	foreach ($departements as $dep_id) {
-		$meta_query_villes[] = [
-			'key' => 'ville',
-			'value' => '"' . $dep_id . '"',
-			'compare' => 'LIKE'
-		];
+		$villes_ids = get_field('villes', $dep_id);
+		if ($villes_ids) {
+			if (!is_array($villes_ids)) {
+				$villes_ids = [$villes_ids];
+			}
+			$villes = array_merge($villes, array_map('intval', $villes_ids));
+		}
 	}
 	
-	$villes = get_posts([
-		'post_type' => 'ville',
-		'posts_per_page' => -1,
-		'fields' => 'ids',
-		'meta_query' => $meta_query_villes
-	]);
+	// Si aucune ville trouvée via relation bidirectionnelle, utiliser meta_query
+	if (empty($villes)) {
+		$meta_query_villes = ['relation' => 'OR'];
+		foreach ($departements as $dep_id) {
+			$meta_query_villes[] = [
+				'key' => 'ville',
+				'value' => '"' . $dep_id . '"',
+				'compare' => 'LIKE'
+			];
+		}
+		
+		$villes = get_posts([
+			'post_type' => 'ville',
+			'posts_per_page' => -1,
+			'fields' => 'ids',
+			'meta_query' => $meta_query_villes
+		]);
+	}
+	
+	// Supprimer les doublons
+	$villes = array_unique($villes);
 	
 	if (empty($villes)) {
 		return [];
@@ -2797,3 +2825,742 @@ function urbanquest_save_default_features($post_id) {
 	}
 }
 add_action('acf/save_post', 'urbanquest_save_default_features', 20);
+
+// ============================================================================
+// CRÉATION AUTOMATIQUE DES RÉGIONS FRANÇAISES
+// ============================================================================
+
+/**
+ * Liste de toutes les régions françaises (13 régions métropolitaines + 5 régions d'outre-mer)
+ */
+function urbanquest_get_french_regions() {
+	return array(
+		// Régions métropolitaines (13)
+		'Auvergne-Rhône-Alpes',
+		'Bourgogne-Franche-Comté',
+		'Bretagne',
+		'Centre-Val de Loire',
+		'Corse',
+		'Grand Est',
+		'Hauts-de-France',
+		'Île-de-France',
+		'Normandie',
+		'Nouvelle-Aquitaine',
+		'Occitanie',
+		'Pays de la Loire',
+		'Provence-Alpes-Côte d\'Azur',
+		// Régions d'outre-mer (5)
+		'Guadeloupe',
+		'Martinique',
+		'Guyane',
+		'La Réunion',
+		'Mayotte'
+	);
+}
+
+/**
+ * Préremplit automatiquement le champ "Pays" pour une région lors de sa création
+ * Si aucun pays n'est défini, assigne le premier pays disponible (généralement "France")
+ */
+function urbanquest_prefill_region_country($post_id) {
+	// Ne s'applique qu'aux posts de type 'region'
+	$post = get_post($post_id);
+	if (!$post || $post->post_type !== 'region') {
+		return;
+	}
+	
+	// Vérifier si le champ "countries" est déjà rempli
+	$current_country = get_field('countries', $post_id);
+	if (!empty($current_country)) {
+		// Le champ est déjà rempli, ne rien faire
+		return;
+	}
+	
+	// Récupérer le premier pays disponible (généralement "France")
+	$countries = get_posts(array(
+		'post_type' => 'country',
+		'posts_per_page' => 1,
+		'post_status' => 'publish',
+		'orderby' => 'title',
+		'order' => 'ASC'
+	));
+	
+	if (!empty($countries)) {
+		$country_id = $countries[0]->ID;
+		// Assigner le pays à la région
+		update_field('countries', $country_id, $post_id);
+	}
+}
+add_action('acf/save_post', 'urbanquest_prefill_region_country', 10);
+
+/**
+ * Crée toutes les régions françaises dans la base de données
+ * Ne crée que les régions qui n'existent pas déjà
+ * 
+ * @param int|null $country_id ID du pays à assigner (null = utilise le premier pays disponible ou "France")
+ * @return array Résultat avec le nombre de régions créées
+ */
+function urbanquest_create_all_french_regions($country_id = null) {
+	// Si aucun pays n'est spécifié, chercher "France" ou le premier pays disponible
+	if ($country_id === null) {
+		// Récupérer tous les pays et chercher "France"
+		$all_countries = get_posts(array(
+			'post_type' => 'country',
+			'posts_per_page' => -1,
+			'post_status' => 'publish',
+			'orderby' => 'title',
+			'order' => 'ASC'
+		));
+		
+		if (empty($all_countries)) {
+			return array(
+				'success' => false,
+				'message' => 'Aucun pays trouvé dans la base de données. Veuillez créer le pays "France" d\'abord.',
+				'created' => 0,
+				'skipped' => 0,
+				'total' => 0
+			);
+		}
+		
+		// Chercher "France" dans la liste
+		$france_found = false;
+		foreach ($all_countries as $country) {
+			if (strtolower(trim($country->post_title)) === 'france') {
+				$country_id = $country->ID;
+				$france_found = true;
+				break;
+			}
+		}
+		
+		// Si "France" n'est pas trouvé, utiliser le premier pays disponible
+		if (!$france_found) {
+			$country_id = $all_countries[0]->ID;
+		}
+	}
+	
+	// Vérifier que le pays existe
+	$country_post = get_post($country_id);
+	if (!$country_post || $country_post->post_type !== 'country') {
+		return array(
+			'success' => false,
+			'message' => 'Le pays spécifié n\'existe pas.',
+			'created' => 0,
+			'skipped' => 0,
+			'total' => 0
+		);
+	}
+	
+	// Récupérer toutes les régions existantes (par titre)
+	$existing_regions = get_posts(array(
+		'post_type' => 'region',
+		'posts_per_page' => -1,
+		'post_status' => 'any'
+	));
+	
+	$existing_titles = array();
+	foreach ($existing_regions as $region) {
+		$existing_titles[] = strtolower(trim($region->post_title));
+	}
+	
+	// Liste des régions françaises à créer
+	$french_regions = urbanquest_get_french_regions();
+	
+	$created = 0;
+	$skipped = 0;
+	$created_regions = array();
+	
+	foreach ($french_regions as $region_name) {
+		$region_name_lower = strtolower(trim($region_name));
+		
+		// Vérifier si la région existe déjà
+		if (in_array($region_name_lower, $existing_titles)) {
+			$skipped++;
+			continue;
+		}
+		
+		// Créer la région
+		$region_id = wp_insert_post(array(
+			'post_title' => $region_name,
+			'post_type' => 'region',
+			'post_status' => 'publish',
+			'post_content' => '' // Contenu vide par défaut
+		));
+		
+		if (is_wp_error($region_id)) {
+			continue;
+		}
+		
+		// Assigner le pays à la région
+		update_field('countries', $country_id, $region_id);
+		
+		$created++;
+		$created_regions[] = $region_name;
+	}
+	
+	return array(
+		'success' => true,
+		'message' => sprintf(
+			'%d région(s) créée(s) avec succès. %d région(s) existante(s) ignorée(s).',
+			$created,
+			$skipped
+		),
+		'created' => $created,
+		'skipped' => $skipped,
+		'total' => count($french_regions),
+		'country_id' => $country_id,
+		'country_name' => get_the_title($country_id),
+		'created_regions' => $created_regions
+	);
+}
+
+/**
+ * Ajoute une page d'administration pour créer toutes les régions françaises
+ */
+function urbanquest_add_create_regions_admin_page() {
+	add_submenu_page(
+		'edit.php?post_type=region',
+		'Créer les régions françaises',
+		'Créer toutes les régions',
+		'manage_options',
+		'create-french-regions',
+		'urbanquest_create_regions_admin_page_callback'
+	);
+}
+add_action('admin_menu', 'urbanquest_add_create_regions_admin_page');
+
+/**
+ * Callback pour la page d'administration de création des régions
+ */
+function urbanquest_create_regions_admin_page_callback() {
+	// Vérifier les permissions
+	if (!current_user_can('manage_options')) {
+		wp_die('Vous n\'avez pas les permissions nécessaires pour accéder à cette page.');
+	}
+	
+	$result = null;
+	
+	// Traiter la soumission du formulaire
+	if (isset($_POST['create_regions']) && check_admin_referer('create_regions_action', 'create_regions_nonce')) {
+		$country_id = isset($_POST['country_id']) && !empty($_POST['country_id']) ? intval($_POST['country_id']) : null;
+		$result = urbanquest_create_all_french_regions($country_id);
+	}
+	
+	// Récupérer tous les pays disponibles
+	$countries = get_posts(array(
+		'post_type' => 'country',
+		'posts_per_page' => -1,
+		'post_status' => 'publish',
+		'orderby' => 'title',
+		'order' => 'ASC'
+	));
+	
+	// Récupérer les statistiques actuelles
+	$all_regions = get_posts(array(
+		'post_type' => 'region',
+		'posts_per_page' => -1,
+		'post_status' => 'any'
+	));
+	
+	$french_regions = urbanquest_get_french_regions();
+	$existing_region_titles = array();
+	foreach ($all_regions as $region) {
+		$existing_region_titles[] = strtolower(trim($region->post_title));
+	}
+	
+	$missing_regions = array();
+	foreach ($french_regions as $region_name) {
+		if (!in_array(strtolower(trim($region_name)), $existing_region_titles)) {
+			$missing_regions[] = $region_name;
+		}
+	}
+	
+	?>
+	<div class="wrap">
+		<h1>Créer toutes les régions françaises</h1>
+		
+		<?php if ($result) : ?>
+			<?php if ($result['success']) : ?>
+				<div class="notice notice-success is-dismissible">
+					<p><strong>✅ Succès :</strong> <?php echo esc_html($result['message']); ?></p>
+					<?php if (!empty($result['created_regions'])) : ?>
+						<p><strong>Régions créées :</strong></p>
+						<ul style="margin-left: 20px;">
+							<?php foreach ($result['created_regions'] as $region_name) : ?>
+								<li><?php echo esc_html($region_name); ?></li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
+			<?php else : ?>
+				<div class="notice notice-error is-dismissible">
+					<p><strong>❌ Erreur :</strong> <?php echo esc_html($result['message']); ?></p>
+				</div>
+			<?php endif; ?>
+		<?php endif; ?>
+		
+		<div class="card" style="max-width: 800px; margin-top: 20px;">
+			<h2>Statistiques actuelles</h2>
+			<ul>
+				<li><strong>Total de régions dans la base :</strong> <?php echo count($all_regions); ?></li>
+				<li><strong>Régions françaises à créer :</strong> <?php echo count($french_regions); ?></li>
+				<li><strong>Régions déjà présentes :</strong> <span style="color: #00a32a;"><?php echo count($french_regions) - count($missing_regions); ?></span></li>
+				<li><strong>Régions manquantes :</strong> <span style="color: <?php echo count($missing_regions) > 0 ? '#d63638' : '#00a32a'; ?>;"><?php echo count($missing_regions); ?></span></li>
+			</ul>
+			
+			<?php if (!empty($missing_regions)) : ?>
+				<p><strong>Régions qui seront créées :</strong></p>
+				<ul style="margin-left: 20px;">
+					<?php foreach ($missing_regions as $region_name) : ?>
+						<li><?php echo esc_html($region_name); ?></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php else : ?>
+				<p style="color: #00a32a;"><strong>✅ Toutes les régions françaises sont déjà présentes dans la base de données.</strong></p>
+			<?php endif; ?>
+		</div>
+		
+		<div class="card" style="max-width: 800px; margin-top: 20px;">
+			<h2>Action</h2>
+			<p>Cette fonction va créer toutes les 18 régions françaises (13 métropolitaines + 5 d'outre-mer) qui n'existent pas encore dans la base de données.</p>
+			
+			<?php if (empty($countries)) : ?>
+				<div class="notice notice-warning">
+					<p><strong>⚠️ Attention :</strong> Aucun pays trouvé dans la base de données. Veuillez créer le pays "France" d'abord.</p>
+				</div>
+			<?php else : ?>
+				<form method="post" action="">
+					<?php wp_nonce_field('create_regions_action', 'create_regions_nonce'); ?>
+					
+					<table class="form-table">
+						<tr>
+							<th scope="row">
+								<label for="country_id">Pays à assigner</label>
+							</th>
+							<td>
+								<select name="country_id" id="country_id" style="min-width: 300px;">
+									<option value="">-- Chercher "France" ou utiliser le premier pays disponible --</option>
+									<?php foreach ($countries as $country) : ?>
+										<option value="<?php echo esc_attr($country->ID); ?>" <?php selected(strtolower($country->post_title), 'france'); ?>>
+											<?php echo esc_html($country->post_title); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+								<p class="description">Si aucun pays n'est sélectionné, le système cherchera "France" ou utilisera le premier pays disponible.</p>
+							</td>
+						</tr>
+					</table>
+					
+					<?php submit_button('Créer toutes les régions françaises', 'primary', 'create_regions'); ?>
+				</form>
+			<?php endif; ?>
+		</div>
+		
+		<div class="card" style="max-width: 800px; margin-top: 20px;">
+			<h2>Liste des 18 régions françaises</h2>
+			<p><strong>Régions métropolitaines (13) :</strong></p>
+			<ol style="margin-left: 20px;">
+				<?php 
+				$metropolitan_regions = array_slice($french_regions, 0, 13);
+				foreach ($metropolitan_regions as $region_name) : ?>
+					<li><?php echo esc_html($region_name); ?></li>
+				<?php endforeach; ?>
+			</ol>
+			<p style="margin-top: 20px;"><strong>Régions d'outre-mer (5) :</strong></p>
+			<ol start="14" style="margin-left: 20px;">
+				<?php 
+				$overseas_regions = array_slice($french_regions, 13);
+				foreach ($overseas_regions as $region_name) : ?>
+					<li><?php echo esc_html($region_name); ?></li>
+				<?php endforeach; ?>
+			</ol>
+		</div>
+		
+		<div class="card" style="max-width: 800px; margin-top: 20px;">
+			<h2>Note</h2>
+			<p>Seules les régions qui n'existent pas encore seront créées. Les régions existantes ne seront pas modifiées.</p>
+			<p>Chaque région créée sera automatiquement associée au pays sélectionné (ou "France" par défaut).</p>
+		</div>
+	</div>
+	<?php
+}
+
+// ============================================================================
+// CRÉATION AUTOMATIQUE DES DÉPARTEMENTS FRANÇAIS
+// ============================================================================
+
+/**
+ * Liste de tous les départements français avec leur région associée
+ * Format: array('numéro' => array('nom' => 'Nom du département', 'region' => 'Nom de la région'))
+ */
+function urbanquest_get_french_departments() {
+	return array(
+		'01' => array('nom' => 'Ain', 'region' => 'Auvergne-Rhône-Alpes'),
+		'02' => array('nom' => 'Aisne', 'region' => 'Hauts-de-France'),
+		'03' => array('nom' => 'Allier', 'region' => 'Auvergne-Rhône-Alpes'),
+		'04' => array('nom' => 'Alpes-de-Haute-Provence', 'region' => 'Provence-Alpes-Côte d\'Azur'),
+		'05' => array('nom' => 'Hautes-Alpes', 'region' => 'Provence-Alpes-Côte d\'Azur'),
+		'06' => array('nom' => 'Alpes-Maritimes', 'region' => 'Provence-Alpes-Côte d\'Azur'),
+		'07' => array('nom' => 'Ardèche', 'region' => 'Auvergne-Rhône-Alpes'),
+		'08' => array('nom' => 'Ardennes', 'region' => 'Grand Est'),
+		'09' => array('nom' => 'Ariège', 'region' => 'Occitanie'),
+		'10' => array('nom' => 'Aube', 'region' => 'Grand Est'),
+		'11' => array('nom' => 'Aude', 'region' => 'Occitanie'),
+		'12' => array('nom' => 'Aveyron', 'region' => 'Occitanie'),
+		'13' => array('nom' => 'Bouches-du-Rhône', 'region' => 'Provence-Alpes-Côte d\'Azur'),
+		'14' => array('nom' => 'Calvados', 'region' => 'Normandie'),
+		'15' => array('nom' => 'Cantal', 'region' => 'Auvergne-Rhône-Alpes'),
+		'16' => array('nom' => 'Charente', 'region' => 'Nouvelle-Aquitaine'),
+		'17' => array('nom' => 'Charente-Maritime', 'region' => 'Nouvelle-Aquitaine'),
+		'18' => array('nom' => 'Cher', 'region' => 'Centre-Val de Loire'),
+		'19' => array('nom' => 'Corrèze', 'region' => 'Nouvelle-Aquitaine'),
+		'21' => array('nom' => 'Côte-d\'Or', 'region' => 'Bourgogne-Franche-Comté'),
+		'22' => array('nom' => 'Côtes-d\'Armor', 'region' => 'Bretagne'),
+		'23' => array('nom' => 'Creuse', 'region' => 'Nouvelle-Aquitaine'),
+		'24' => array('nom' => 'Dordogne', 'region' => 'Nouvelle-Aquitaine'),
+		'25' => array('nom' => 'Doubs', 'region' => 'Bourgogne-Franche-Comté'),
+		'26' => array('nom' => 'Drôme', 'region' => 'Auvergne-Rhône-Alpes'),
+		'27' => array('nom' => 'Eure', 'region' => 'Normandie'),
+		'28' => array('nom' => 'Eure-et-Loir', 'region' => 'Centre-Val de Loire'),
+		'29' => array('nom' => 'Finistère', 'region' => 'Bretagne'),
+		'2A' => array('nom' => 'Corse-du-Sud', 'region' => 'Corse'),
+		'2B' => array('nom' => 'Haute-Corse', 'region' => 'Corse'),
+		'30' => array('nom' => 'Gard', 'region' => 'Occitanie'),
+		'31' => array('nom' => 'Haute-Garonne', 'region' => 'Occitanie'),
+		'32' => array('nom' => 'Gers', 'region' => 'Occitanie'),
+		'33' => array('nom' => 'Gironde', 'region' => 'Nouvelle-Aquitaine'),
+		'34' => array('nom' => 'Hérault', 'region' => 'Occitanie'),
+		'35' => array('nom' => 'Ille-et-Vilaine', 'region' => 'Bretagne'),
+		'36' => array('nom' => 'Indre', 'region' => 'Centre-Val de Loire'),
+		'37' => array('nom' => 'Indre-et-Loire', 'region' => 'Centre-Val de Loire'),
+		'38' => array('nom' => 'Isère', 'region' => 'Auvergne-Rhône-Alpes'),
+		'39' => array('nom' => 'Jura', 'region' => 'Bourgogne-Franche-Comté'),
+		'40' => array('nom' => 'Landes', 'region' => 'Nouvelle-Aquitaine'),
+		'41' => array('nom' => 'Loir-et-Cher', 'region' => 'Centre-Val de Loire'),
+		'42' => array('nom' => 'Loire', 'region' => 'Auvergne-Rhône-Alpes'),
+		'43' => array('nom' => 'Haute-Loire', 'region' => 'Auvergne-Rhône-Alpes'),
+		'44' => array('nom' => 'Loire-Atlantique', 'region' => 'Pays de la Loire'),
+		'45' => array('nom' => 'Loiret', 'region' => 'Centre-Val de Loire'),
+		'46' => array('nom' => 'Lot', 'region' => 'Occitanie'),
+		'47' => array('nom' => 'Lot-et-Garonne', 'region' => 'Nouvelle-Aquitaine'),
+		'48' => array('nom' => 'Lozère', 'region' => 'Occitanie'),
+		'49' => array('nom' => 'Maine-et-Loire', 'region' => 'Pays de la Loire'),
+		'50' => array('nom' => 'Manche', 'region' => 'Normandie'),
+		'51' => array('nom' => 'Marne', 'region' => 'Grand Est'),
+		'52' => array('nom' => 'Haute-Marne', 'region' => 'Grand Est'),
+		'53' => array('nom' => 'Mayenne', 'region' => 'Pays de la Loire'),
+		'54' => array('nom' => 'Meurthe-et-Moselle', 'region' => 'Grand Est'),
+		'55' => array('nom' => 'Meuse', 'region' => 'Grand Est'),
+		'56' => array('nom' => 'Morbihan', 'region' => 'Bretagne'),
+		'57' => array('nom' => 'Moselle', 'region' => 'Grand Est'),
+		'58' => array('nom' => 'Nièvre', 'region' => 'Bourgogne-Franche-Comté'),
+		'59' => array('nom' => 'Nord', 'region' => 'Hauts-de-France'),
+		'60' => array('nom' => 'Oise', 'region' => 'Hauts-de-France'),
+		'61' => array('nom' => 'Orne', 'region' => 'Normandie'),
+		'62' => array('nom' => 'Pas-de-Calais', 'region' => 'Hauts-de-France'),
+		'63' => array('nom' => 'Puy-de-Dôme', 'region' => 'Auvergne-Rhône-Alpes'),
+		'64' => array('nom' => 'Pyrénées-Atlantiques', 'region' => 'Nouvelle-Aquitaine'),
+		'65' => array('nom' => 'Hautes-Pyrénées', 'region' => 'Occitanie'),
+		'66' => array('nom' => 'Pyrénées-Orientales', 'region' => 'Occitanie'),
+		'67' => array('nom' => 'Bas-Rhin', 'region' => 'Grand Est'),
+		'68' => array('nom' => 'Haut-Rhin', 'region' => 'Grand Est'),
+		'69' => array('nom' => 'Rhône', 'region' => 'Auvergne-Rhône-Alpes'),
+		'70' => array('nom' => 'Haute-Saône', 'region' => 'Bourgogne-Franche-Comté'),
+		'71' => array('nom' => 'Saône-et-Loire', 'region' => 'Bourgogne-Franche-Comté'),
+		'72' => array('nom' => 'Sarthe', 'region' => 'Pays de la Loire'),
+		'73' => array('nom' => 'Savoie', 'region' => 'Auvergne-Rhône-Alpes'),
+		'74' => array('nom' => 'Haute-Savoie', 'region' => 'Auvergne-Rhône-Alpes'),
+		'75' => array('nom' => 'Paris', 'region' => 'Île-de-France'),
+		'76' => array('nom' => 'Seine-Maritime', 'region' => 'Normandie'),
+		'77' => array('nom' => 'Seine-et-Marne', 'region' => 'Île-de-France'),
+		'78' => array('nom' => 'Yvelines', 'region' => 'Île-de-France'),
+		'79' => array('nom' => 'Deux-Sèvres', 'region' => 'Nouvelle-Aquitaine'),
+		'80' => array('nom' => 'Somme', 'region' => 'Hauts-de-France'),
+		'81' => array('nom' => 'Tarn', 'region' => 'Occitanie'),
+		'82' => array('nom' => 'Tarn-et-Garonne', 'region' => 'Occitanie'),
+		'83' => array('nom' => 'Var', 'region' => 'Provence-Alpes-Côte d\'Azur'),
+		'84' => array('nom' => 'Vaucluse', 'region' => 'Provence-Alpes-Côte d\'Azur'),
+		'85' => array('nom' => 'Vendée', 'region' => 'Pays de la Loire'),
+		'86' => array('nom' => 'Vienne', 'region' => 'Nouvelle-Aquitaine'),
+		'87' => array('nom' => 'Haute-Vienne', 'region' => 'Nouvelle-Aquitaine'),
+		'88' => array('nom' => 'Vosges', 'region' => 'Grand Est'),
+		'89' => array('nom' => 'Yonne', 'region' => 'Bourgogne-Franche-Comté'),
+		'90' => array('nom' => 'Territoire de Belfort', 'region' => 'Bourgogne-Franche-Comté'),
+		'91' => array('nom' => 'Essonne', 'region' => 'Île-de-France'),
+		'92' => array('nom' => 'Hauts-de-Seine', 'region' => 'Île-de-France'),
+		'93' => array('nom' => 'Seine-Saint-Denis', 'region' => 'Île-de-France'),
+		'94' => array('nom' => 'Val-de-Marne', 'region' => 'Île-de-France'),
+		'95' => array('nom' => 'Val-d\'Oise', 'region' => 'Île-de-France'),
+		'971' => array('nom' => 'Guadeloupe', 'region' => 'Guadeloupe'),
+		'972' => array('nom' => 'Martinique', 'region' => 'Martinique'),
+		'973' => array('nom' => 'Guyane', 'region' => 'Guyane'),
+		'974' => array('nom' => 'La Réunion', 'region' => 'La Réunion'),
+		'976' => array('nom' => 'Mayotte', 'region' => 'Mayotte')
+	);
+}
+
+/**
+ * Crée tous les départements français dans la base de données
+ * Ne crée que les départements qui n'existent pas déjà
+ * Assigne automatiquement la région correspondante à chaque département
+ * 
+ * @return array Résultat avec le nombre de départements créés
+ */
+function urbanquest_create_all_french_departments() {
+	// Récupérer toutes les régions existantes pour les mapper
+	$all_regions = get_posts(array(
+		'post_type' => 'region',
+		'posts_per_page' => -1,
+		'post_status' => 'any'
+	));
+	
+	$regions_map = array();
+	foreach ($all_regions as $region) {
+		$region_name_lower = strtolower(trim($region->post_title));
+		$regions_map[$region_name_lower] = $region->ID;
+	}
+	
+	// Récupérer tous les départements existants (par titre)
+	$existing_departments = get_posts(array(
+		'post_type' => 'departement',
+		'posts_per_page' => -1,
+		'post_status' => 'any'
+	));
+	
+	$existing_titles = array();
+	foreach ($existing_departments as $dept) {
+		$existing_titles[] = strtolower(trim($dept->post_title));
+	}
+	
+	// Liste des départements français à créer
+	$french_departments = urbanquest_get_french_departments();
+	
+	$created = 0;
+	$skipped = 0;
+	$created_departments = array();
+	$errors = array();
+	
+	foreach ($french_departments as $code => $dept_data) {
+		$dept_name = $dept_data['nom'];
+		$region_name = $dept_data['region'];
+		$dept_name_lower = strtolower(trim($dept_name));
+		
+		// Vérifier si le département existe déjà (par nom uniquement)
+		if (in_array($dept_name_lower, $existing_titles)) {
+			$skipped++;
+			continue;
+		}
+		
+		// Trouver la région correspondante
+		$region_name_lower = strtolower(trim($region_name));
+		$region_id = isset($regions_map[$region_name_lower]) ? $regions_map[$region_name_lower] : null;
+		
+		if (!$region_id) {
+			$errors[] = sprintf('Région "%s" introuvable pour le département "%s"', $region_name, $dept_name);
+			continue;
+		}
+		
+		// Créer le département avec uniquement le nom (ex: "Ain")
+		$dept_id = wp_insert_post(array(
+			'post_title' => $dept_name,
+			'post_type' => 'departement',
+			'post_status' => 'publish',
+			'post_content' => '' // Contenu vide par défaut
+		));
+		
+		if (is_wp_error($dept_id)) {
+			$errors[] = sprintf('Erreur lors de la création du département "%s": %s', $dept_name, $dept_id->get_error_message());
+			continue;
+		}
+		
+		// Assigner la région au département
+		update_field('region', $region_id, $dept_id);
+		
+		$created++;
+		$created_departments[] = $dept_name;
+	}
+	
+	$message = sprintf(
+		'%d département(s) créé(s) avec succès. %d département(s) existant(s) ignoré(s).',
+		$created,
+		$skipped
+	);
+	
+	if (!empty($errors)) {
+		$message .= ' ' . count($errors) . ' erreur(s) rencontrée(s).';
+	}
+	
+	return array(
+		'success' => $created > 0 || empty($errors),
+		'message' => $message,
+		'created' => $created,
+		'skipped' => $skipped,
+		'total' => count($french_departments),
+		'created_departments' => $created_departments,
+		'errors' => $errors
+	);
+}
+
+/**
+ * Ajoute une page d'administration pour créer tous les départements français
+ */
+function urbanquest_add_create_departments_admin_page() {
+	add_submenu_page(
+		'edit.php?post_type=departement',
+		'Créer les départements français',
+		'Créer tous les départements',
+		'manage_options',
+		'create-french-departments',
+		'urbanquest_create_departments_admin_page_callback'
+	);
+}
+add_action('admin_menu', 'urbanquest_add_create_departments_admin_page');
+
+/**
+ * Callback pour la page d'administration de création des départements
+ */
+function urbanquest_create_departments_admin_page_callback() {
+	// Vérifier les permissions
+	if (!current_user_can('manage_options')) {
+		wp_die('Vous n\'avez pas les permissions nécessaires pour accéder à cette page.');
+	}
+	
+	$result = null;
+	
+	// Traiter la soumission du formulaire
+	if (isset($_POST['create_departments']) && check_admin_referer('create_departments_action', 'create_departments_nonce')) {
+		$result = urbanquest_create_all_french_departments();
+	}
+	
+	// Récupérer les statistiques actuelles
+	$all_departments = get_posts(array(
+		'post_type' => 'departement',
+		'posts_per_page' => -1,
+		'post_status' => 'any'
+	));
+	
+	$french_departments = urbanquest_get_french_departments();
+	$existing_dept_titles = array();
+	foreach ($all_departments as $dept) {
+		$existing_dept_titles[] = strtolower(trim($dept->post_title));
+	}
+	
+	$missing_departments = array();
+	foreach ($french_departments as $code => $dept_data) {
+		$dept_name = $dept_data['nom'];
+		if (!in_array(strtolower(trim($dept_name)), $existing_dept_titles)) {
+			$missing_departments[] = $dept_name;
+		}
+	}
+	
+	// Vérifier que les régions existent
+	$all_regions = get_posts(array(
+		'post_type' => 'region',
+		'posts_per_page' => -1,
+		'post_status' => 'any'
+	));
+	
+	$regions_map = array();
+	foreach ($all_regions as $region) {
+		$regions_map[strtolower(trim($region->post_title))] = $region->ID;
+	}
+	
+	$missing_regions = array();
+	$unique_regions = array_unique(array_column($french_departments, 'region'));
+	foreach ($unique_regions as $region_name) {
+		if (!isset($regions_map[strtolower(trim($region_name))])) {
+			$missing_regions[] = $region_name;
+		}
+	}
+	
+	?>
+	<div class="wrap">
+		<h1>Créer tous les départements français</h1>
+		
+		<?php if ($result) : ?>
+			<?php if ($result['success']) : ?>
+				<div class="notice notice-success is-dismissible">
+					<p><strong>✅ Succès :</strong> <?php echo esc_html($result['message']); ?></p>
+					<?php if (!empty($result['created_departments'])) : ?>
+						<p><strong>Départements créés :</strong></p>
+						<ul style="margin-left: 20px; max-height: 300px; overflow-y: auto;">
+							<?php foreach ($result['created_departments'] as $dept_name) : ?>
+								<li><?php echo esc_html($dept_name); ?></li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
+			<?php else : ?>
+				<div class="notice notice-error is-dismissible">
+					<p><strong>❌ Erreur :</strong> <?php echo esc_html($result['message']); ?></p>
+					<?php if (!empty($result['errors'])) : ?>
+						<p><strong>Détails des erreurs :</strong></p>
+						<ul style="margin-left: 20px;">
+							<?php foreach ($result['errors'] as $error) : ?>
+								<li><?php echo esc_html($error); ?></li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
+		<?php endif; ?>
+		
+		<?php if (!empty($missing_regions)) : ?>
+			<div class="notice notice-warning is-dismissible">
+				<p><strong>⚠️ Attention :</strong> Les régions suivantes sont manquantes et doivent être créées d'abord :</p>
+				<ul style="margin-left: 20px;">
+					<?php foreach ($missing_regions as $region_name) : ?>
+						<li><?php echo esc_html($region_name); ?></li>
+					<?php endforeach; ?>
+				</ul>
+				<p>Veuillez d'abord créer toutes les régions françaises via la page <a href="<?php echo admin_url('edit.php?post_type=region&page=create-french-regions'); ?>">"Créer toutes les régions"</a>.</p>
+			</div>
+		<?php endif; ?>
+		
+		<div class="card" style="max-width: 800px; margin-top: 20px;">
+			<h2>Statistiques actuelles</h2>
+			<ul>
+				<li><strong>Total de départements dans la base :</strong> <?php echo count($all_departments); ?></li>
+				<li><strong>Départements français à créer :</strong> <?php echo count($french_departments); ?></li>
+				<li><strong>Départements déjà présents :</strong> <span style="color: #00a32a;"><?php echo count($french_departments) - count($missing_departments); ?></span></li>
+				<li><strong>Départements manquants :</strong> <span style="color: <?php echo count($missing_departments) > 0 ? '#d63638' : '#00a32a'; ?>;"><?php echo count($missing_departments); ?></span></li>
+			</ul>
+			
+			<?php if (!empty($missing_departments)) : ?>
+				<p><strong>Départements qui seront créés (<?php echo count($missing_departments); ?>) :</strong></p>
+				<ul style="margin-left: 20px; max-height: 300px; overflow-y: auto;">
+					<?php foreach ($missing_departments as $dept_name) : ?>
+						<li><?php echo esc_html($dept_name); ?></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php else : ?>
+				<p style="color: #00a32a;"><strong>✅ Tous les départements français sont déjà présents dans la base de données.</strong></p>
+			<?php endif; ?>
+		</div>
+		
+		<div class="card" style="max-width: 800px; margin-top: 20px;">
+			<h2>Action</h2>
+			<p>Cette fonction va créer tous les <?php echo count($french_departments); ?> départements français qui n'existent pas encore dans la base de données.</p>
+			<p>Chaque département sera automatiquement associé à sa région correspondante.</p>
+			
+			<?php if (!empty($missing_regions)) : ?>
+				<div class="notice notice-error">
+					<p><strong>❌ Impossible de créer les départements :</strong> Certaines régions sont manquantes. Veuillez d'abord créer toutes les régions.</p>
+				</div>
+			<?php else : ?>
+				<form method="post" action="">
+					<?php wp_nonce_field('create_departments_action', 'create_departments_nonce'); ?>
+					
+					<?php submit_button('Créer tous les départements français', 'primary', 'create_departments'); ?>
+				</form>
+			<?php endif; ?>
+		</div>
+		
+		<div class="card" style="max-width: 800px; margin-top: 20px;">
+			<h2>Note</h2>
+			<p>Seuls les départements qui n'existent pas encore seront créés. Les départements existants ne seront pas modifiés.</p>
+			<p>Chaque département créé sera automatiquement associé à sa région correspondante.</p>
+			<p>Les départements seront créés avec uniquement leur nom (ex: "Ain", "Paris", "Guadeloupe").</p>
+		</div>
+	</div>
+	<?php
+}

@@ -269,6 +269,52 @@ do_action( 'hestia_before_single_post_wrapper' );
 				]);
 			}
 		}
+		
+		// Filtrer pour ne garder que les départements qui ont des villes
+		if (!empty($filtered_departements)) {
+			$departements_with_villes = array();
+			foreach ($filtered_departements as $departement) {
+				$departement_id = $departement->ID;
+				$has_villes = false;
+				
+				// Vérifier via la relation bidirectionnelle
+				$villes_ids = get_field('villes', $departement_id);
+				if ($villes_ids) {
+					// Convertir en tableau si c'est un ID unique
+					if (!is_array($villes_ids)) {
+						$villes_ids = [$villes_ids];
+					}
+					if (!empty($villes_ids)) {
+						$has_villes = true;
+					}
+				}
+				
+				// Fallback : vérifier via meta_query si pas trouvé via relation bidirectionnelle
+				if (!$has_villes) {
+					$villes_count = get_posts([
+						'post_type' => 'ville',
+						'posts_per_page' => 1,
+						'fields' => 'ids',
+						'meta_query' => [
+							[
+								'key' => 'ville',
+								'value' => '"' . $departement_id . '"',
+								'compare' => 'LIKE'
+							]
+						]
+					]);
+					
+					if (!empty($villes_count)) {
+						$has_villes = true;
+					}
+				}
+				
+				if ($has_villes) {
+					$departements_with_villes[] = $departement;
+				}
+			}
+			$filtered_departements = $departements_with_villes;
+		}
 	}
 ?>
 		<article id="post-<?php the_ID(); ?>" <?php post_class('single-region-content'); ?>>
@@ -376,23 +422,20 @@ do_action( 'hestia_before_single_post_wrapper' );
 					<!-- Liste des départements -->
 					<?php if (!empty($filtered_departements)) : ?>
 						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
-						<h2 style="margin-bottom: 30px;">Les départements de <?php echo esc_html($region_name); ?></h2>
-						<div class="row" style="margin-bottom: 60px;">
+						<h2 style="margin-bottom: 30px;">Découvrez nos jeux de piste dans les départements de <?php echo esc_html($region_name); ?></h2>
+						<ul style="margin-bottom: 60px; list-style: none; padding: 0;">
 							<?php foreach ($filtered_departements as $departement) : 
 								$departement_id = $departement->ID;
 								$departement_name = $departement->post_title;
 								$departement_permalink = get_permalink($departement_id);
 							?>
-							<div class="col-md-4" style="margin-bottom: 20px;">
-								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-									<h3 style="margin: 0 0 15px; font-size: 22px; color: #1f2a37;"><?php echo esc_html($departement_name); ?></h3>
-									<a href="<?php echo esc_url($departement_permalink); ?>" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px; font-size: 14px;">
-										Voir le jeu de piste du <?php echo esc_html($departement_name); ?>
-									</a>
-								</div>
-							</div>
+							<li style="margin-bottom: 10px;">
+								<a href="<?php echo esc_url($departement_permalink); ?>" style="color: #00bbff; text-decoration: none; font-size: 16px;">
+									Les jeux de piste en <?php echo esc_html($departement_name); ?>
+								</a>
+							</li>
 							<?php endforeach; ?>
-						</div>
+						</ul>
 					<?php endif; ?>
 
 				</div>

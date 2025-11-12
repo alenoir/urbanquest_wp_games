@@ -271,7 +271,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
 							
 							<div>
-								<img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" loading="lazy" />
+								<img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" style="border-radius: 12px;" loading="lazy" />
 							</div>
 							
 							<?php echo wp_kses_post($description_section_terrain_de_jeu); ?>

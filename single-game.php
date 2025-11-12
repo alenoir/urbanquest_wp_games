@@ -189,6 +189,12 @@ do_action('hestia_before_single_post_wrapper');
 		font-size: 16px;
 	}
 	
+	/* Exception pour le breadcrumb - garder 14px */
+	.urbanquest-breadcrumb-simple,
+	.urbanquest-breadcrumb-simple * {
+		font-size: 14px !important;
+	}
+	
 	/* Layout responsive pour les pages de jeu */
 	@media (max-width: 991px) {
 		.game-sidebar-card,
@@ -292,8 +298,10 @@ do_action('hestia_before_single_post_wrapper');
 	
 	// Helper pour le bouton de paiement
 	$payment_url_button = urbanquest_get_field_with_default('payment_url', '#');
-	$button_text_button = (empty($payment_url_button) || $payment_url_button === '#') ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
-	$button_href_button = (empty($payment_url_button) || $payment_url_button === '#') ? '#' : $payment_url_button;
+	$button_disabled = (empty($payment_url_button) || $payment_url_button === '#');
+	$button_text_button = $button_disabled ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
+	$button_href_button = $button_disabled ? '#' : $payment_url_button;
+	$button_style_disabled = $button_disabled ? 'opacity: 0.6; cursor: not-allowed; pointer-events: none;' : '';
 	
 	// Section "Pourquoi choisir" - Champs ACF avec valeurs par défaut
 	$pourquoi_choisir_titre = urbanquest_get_field_with_default('pourquoi_choisir_titre', 'Pourquoi choisir Urban Quest à [ville] ?');
@@ -457,7 +465,7 @@ do_action('hestia_before_single_post_wrapper');
 										</ul>
 									</li>
 									<li style="list-style: none; display: center; align-items: flex-start; gap: 10px; width: 100%; margin: 0 auto; padding-top: 16px; padding-bottom: 24px;">
-										<div style="text-align: center;"><a href="<?php echo esc_url($button_href_button); ?>" target="_blank" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px;" rel="noopener sponsored">Réserve ton jeu d'exploration</a></div></li>
+										<div style="text-align: center;"><a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a></div></li>
 								</ul>
 							</section>
 						</div>
@@ -497,7 +505,7 @@ do_action('hestia_before_single_post_wrapper');
 						<?php endforeach; ?>
 					</div>
 					<div style="text-align: center; margin: 30px 0 6px;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -541,7 +549,7 @@ do_action('hestia_before_single_post_wrapper');
 						<div class="col-md-8 game-info-content">
 							<?php if ($ville_id) : ?>
 								<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
-								<div><img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" loading="lazy" /></div>
+								<div><img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" style="border-radius: 12px;" loading="lazy" /></div>
 								<?php echo wp_kses_post($description_section_terrain_de_jeu); ?>
 
 								<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -559,7 +567,7 @@ do_action('hestia_before_single_post_wrapper');
 					<p class="p1" style="text-align: center; font-size: 16px;">Choisis ton parcours, pars à l'aventure dans la ville et mesure-toi aux autres équipes.</p>
 					<p class="p1" style="text-align: center; font-size: 16px;">Une expérience fun, rapide à lancer et 100 % autonome !</p>
 					<p style="text-align: center;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
 					</p>
 
 					<?php if (!empty($related_games)) : ?>
@@ -602,7 +610,7 @@ do_action('hestia_before_single_post_wrapper');
 					</table>
 					</div>
 					<div style="text-align: center; padding-top: 30px;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo ($button_href_button !== '#') ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px;"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
