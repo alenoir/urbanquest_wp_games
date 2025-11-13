@@ -328,16 +328,16 @@ do_action( 'hestia_before_single_post_wrapper' );
 					?>
 
 					<!-- Titre -->
-					<h1 style="margin-bottom: 30px;"><?php echo esc_html($region_name); ?></h1>
+					<h1 class="urbanquest-page-title"><?php echo esc_html($region_name); ?></h1>
 					
 					<!-- Description -->
-					<div class="region-description" style="margin-bottom: 60px;">
+					<div class="region-description urbanquest-section-description">
 						<?php echo wpautop($region_description); ?>
 					</div>
 					
 					<!-- Liste des jeux -->
 					<?php if (!empty($games)) : ?>
-						<h2 style="margin-bottom: 40px;">Jeu de piste en <?php echo esc_html($region_name); ?> - Nos aventures</h2>
+						<h2 class="urbanquest-section-title">Jeu de piste en <?php echo esc_html($region_name); ?> - Nos aventures</h2>
 						<?php urbanquest_display_games_grid($games, ['columns' => 4, 'layout' => 'simple', 'show_city' => true]); ?>
 					<?php endif; ?>
 					
@@ -346,9 +346,9 @@ do_action( 'hestia_before_single_post_wrapper' );
 					$autres_jeux = get_field('autres_jeux', $region_id);
 					if (!empty($autres_jeux) && is_array($autres_jeux)) : 
 					?>
-						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
-						<h2 style="margin-bottom: 40px;">Autres jeux</h2>
-						<div class="row urbanquest-games-grid" style="margin-bottom: 60px;">
+						<hr class="urbanquest-section-divider" />
+						<h2 class="urbanquest-section-title-left">Autres jeux</h2>
+						<div class="row urbanquest-games-grid">
 							<?php foreach ($autres_jeux as $item) : 
 								// Récupérer la page depuis le répéteur ACF
 								$page = isset($item['page']) ? $item['page'] : null;
@@ -390,24 +390,24 @@ do_action( 'hestia_before_single_post_wrapper' );
 									$page_image = get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
 								}
 							?>
-							<div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom: 30px; display: flex;">
-								<div class="urbanquest-game-card" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; width: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-									<a href="<?php echo esc_url($page_permalink); ?>" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%;">
-										<div style="position: relative; width: 100%; height: 200px; overflow: hidden;">
+							<div class="col-md-3 col-sm-6 col-xs-12">
+								<div class="urbanquest-game-card">
+									<a href="<?php echo esc_url($page_permalink); ?>">
+										<div class="urbanquest-game-card-image-wrapper">
 											<img 
 												src="<?php echo esc_url($page_image); ?>" 
 												alt="<?php echo esc_attr($page_title); ?>" 
-												style="width: 100%; height: 100%; object-fit: cover;" 
+												class="urbanquest-game-card-image"
 												loading="lazy" 
 											/>
 										</div>
-										<div style="padding: 20px; flex: 1; display: flex; flex-direction: column; min-height: 180px;">
-											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37; line-height: 1.3; min-height: 52px;"><?php echo esc_html($page_title); ?></h3>
+										<div class="urbanquest-game-card-content">
+											<h3 class="urbanquest-game-card-title"><?php echo esc_html($page_title); ?></h3>
 											<?php if (!empty($page_excerpt)) : ?>
-												<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5; flex: 1; min-height: 60px;"><?php echo esc_html($page_excerpt); ?></p>
+												<p class="urbanquest-game-card-excerpt"><?php echo esc_html($page_excerpt); ?></p>
 											<?php endif; ?>
-											<div style="text-align: center; margin-top: auto;">
-												<span style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 8px 20px; border-radius: 999px; font-size: 14px;">
+											<div class="urbanquest-game-card-footer">
+												<span class="urbanquest-game-card-button">
 													Découvrir le jeu
 												</span>
 											</div>

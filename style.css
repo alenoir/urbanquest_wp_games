@@ -1,0 +1,341 @@
+/*
+Theme Name: Urban Quest
+Description: Thème enfant personnalisé pour Urban Quest basé sur Hestia. Gère les jeux de piste, villes, départements, régions et pays avec des champs ACF personnalisés.
+Template: hestia
+Version: 1.1.0
+Author: BorleauxCorp
+*/
+
+/* ============================================================================
+   BREADCRUMB
+   ============================================================================ */
+
+.urbanquest-breadcrumb {
+  background: transparent !important;
+  padding: 15px 0 !important;
+  margin: 30px 0 0 0 !important;
+  border-bottom: 2px solid #00bbff !important;
+  position: relative !important;
+  z-index: 9999 !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.urbanquest-breadcrumb .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.urbanquest-breadcrumb > .container > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #000000 !important;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.urbanquest-breadcrumb .breadcrumb-separator {
+  color: rgba(0, 0, 0, 0.6) !important;
+  margin: 0 8px;
+  font-size: 18px;
+}
+
+.urbanquest-breadcrumb a {
+  color: #000000 !important;
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.urbanquest-breadcrumb a:hover {
+  opacity: 0.8;
+}
+
+.urbanquest-breadcrumb .breadcrumb-current {
+  color: #000000 !important;
+  font-weight: 700;
+}
+
+/* Breadcrumb simple */
+.urbanquest-breadcrumb-simple {
+  margin: 30px 0 20px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.urbanquest-breadcrumb-simple .breadcrumb-separator {
+  margin: 0 6px;
+  color: #999;
+}
+
+.urbanquest-breadcrumb-simple a {
+  color: #666;
+  text-decoration: none;
+}
+
+.urbanquest-breadcrumb-simple a:hover {
+  text-decoration: underline;
+}
+
+.urbanquest-breadcrumb-simple .breadcrumb-current {
+  color: #333;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   HEADER CUSTOM CONTENT
+   ============================================================================ */
+
+.urbanquest-header-custom-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.urbanquest-header-custom-content .btn-primary {
+  padding: 10px 20px;
+  background: #00bbff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+/* ============================================================================
+   TYPOGRAPHY & LAYOUT
+   ============================================================================ */
+
+.urbanquest-page-title {
+  margin-bottom: 30px;
+}
+
+.urbanquest-section-title {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.urbanquest-section-title-left {
+  margin-bottom: 40px;
+}
+
+.urbanquest-section-subtitle {
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.urbanquest-section-description {
+  margin-bottom: 60px;
+}
+
+.urbanquest-section-divider {
+  margin: 60px 0;
+  border: none;
+  border-top: 1px solid #ddd;
+}
+
+.urbanquest-content-paragraph {
+  margin: 10px 0;
+}
+
+/* ============================================================================
+   GAME CARDS
+   ============================================================================ */
+
+.urbanquest-games-grid {
+  margin-bottom: 60px;
+}
+
+.urbanquest-games-grid .col-md-3,
+.urbanquest-games-grid .col-sm-6,
+.urbanquest-games-grid .col-xs-12 {
+  margin-bottom: 30px;
+  display: flex;
+}
+
+.urbanquest-game-card {
+  background: #f7f9fc;
+  border: 1px solid #e6ecf4;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.urbanquest-game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.urbanquest-game-card a {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.urbanquest-game-card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.urbanquest-game-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.urbanquest-game-card-content {
+  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+}
+
+.urbanquest-game-card-title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  color: #1f2a37;
+  line-height: 1.3;
+  min-height: 52px;
+}
+
+.urbanquest-game-card-excerpt {
+  margin: 0 0 15px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 1;
+  min-height: 60px;
+}
+
+.urbanquest-game-card-footer {
+  text-align: center;
+  margin-top: auto;
+}
+
+.urbanquest-game-card-button {
+  display: inline-block;
+  background: #00bbff;
+  color: white;
+  font-weight: bold;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+/* ============================================================================
+   EMPTY STATE / COMING SOON
+   ============================================================================ */
+
+.urbanquest-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f7f9fc;
+  border-radius: 12px;
+  margin-bottom: 60px;
+}
+
+.urbanquest-empty-state h2 {
+  margin-bottom: 20px;
+  color: #1f2a37;
+}
+
+.urbanquest-empty-state p {
+  font-size: 18px;
+  color: #6b7280;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto 30px;
+}
+
+.urbanquest-empty-state p.small {
+  font-size: 16px;
+}
+
+.urbanquest-empty-state a {
+  color: #00bbff;
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   PROGRESS BAR
+   ============================================================================ */
+
+.urbanquest-progress-wrapper {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  margin-top: 8px;
+}
+
+.urbanquest-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  overflow: visible;
+  background: white;
+  border: 1px solid #e6ecf4;
+}
+
+.urbanquest-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #00bbff;
+  border-radius: 10px;
+  z-index: 1;
+}
+
+.urbanquest-progress-empty {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: white;
+  border-radius: 0 10px 10px 0;
+  z-index: 1;
+}
+
+/* ============================================================================
+   IMAGES
+   ============================================================================ */
+
+.urbanquest-image-rounded {
+  border-radius: 12px;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 782px) {
+  .urbanquest-breadcrumb {
+    padding: 10px 0 !important;
+  }
+
+  .urbanquest-breadcrumb > .container > div {
+    font-size: 12px;
+  }
+
+  .urbanquest-game-card-content {
+    min-height: auto;
+  }
+
+  .urbanquest-game-card-title {
+    min-height: auto;
+  }
+
+  .urbanquest-game-card-excerpt {
+    min-height: auto;
+  }
+}

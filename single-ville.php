@@ -210,7 +210,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 	
 	$description_section_terrain_de_jeu = get_field('description_section_terrain_de_jeu');
 	if (empty($description_section_terrain_de_jeu)) {
-		$description_section_terrain_de_jeu = '<p style="margin: 10px 0;">Avec Urban Quest, oubliez les visites classiques : chaque rue peut cacher un indice, chaque monument peut être la clé d\'une énigme. Entre rires, stratégie et adrénaline, vous vivez une expérience intense où l\'observation et l\'esprit d\'équipe font toute la différence.</p><p style="margin: 10px 0;">Pendant 60 minutes, la ville s\'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l\'énergie du jeu.</p><p style="margin: 10px 0;">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à découvrir la ville autrement et à créer des souvenirs mémorables ✨</p>';
+		$description_section_terrain_de_jeu = '<p class="urbanquest-content-paragraph">Avec Urban Quest, oubliez les visites classiques : chaque rue peut cacher un indice, chaque monument peut être la clé d\'une énigme. Entre rires, stratégie et adrénaline, vous vivez une expérience intense où l\'observation et l\'esprit d\'équipe font toute la différence.</p><p class="urbanquest-content-paragraph">Pendant 60 minutes, la ville s\'anime sous vos pas : explorez, déduisez, surprenez-vous… et laissez-vous porter par l\'énergie du jeu.</p><p class="urbanquest-content-paragraph">En famille, entre amis ou pour un EVJF/EVG, préparez-vous à découvrir la ville autrement et à créer des souvenirs mémorables ✨</p>';
 	}
 	// Remplacer [ville] par le nom de la ville
 	$description_section_terrain_de_jeu = str_replace('[ville]', $ville_name, $description_section_terrain_de_jeu);
@@ -224,7 +224,7 @@ do_action( 'hestia_before_single_post_wrapper' );
 	
 	$description_section_jeu_unique = get_field('description_section_jeu_unique');
 	if (empty($description_section_jeu_unique)) {
-		$description_section_jeu_unique = '<p style="margin: 10px 0;">Si vous cherchez une activité insolite à [ville], Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de [ville]. Idéal pour ceux qui veulent découvrir autrement [ville] en mêlant culture, divertissement et esprit de compétition.</p><p style="margin: 10px 0;">🔎 <em>Fun fact :</em> avec Urban Quest, c\'est à votre tour d\'apporter couleurs et énergie à [ville] en résolvant ses énigmes !</p>';
+		$description_section_jeu_unique = '<p class="urbanquest-content-paragraph">Si vous cherchez une activité insolite à [ville], Urban Quest est le jeu parfait : une chasse au trésor moderne, ludique et connectée qui vous entraîne à travers les rues et les lieux emblématiques de [ville]. Idéal pour ceux qui veulent découvrir autrement [ville] en mêlant culture, divertissement et esprit de compétition.</p><p class="urbanquest-content-paragraph">🔎 <em>Fun fact :</em> avec Urban Quest, c\'est à votre tour d\'apporter couleurs et énergie à [ville] en résolvant ses énigmes !</p>';
 	}
 	// Remplacer [ville] par le nom de la ville
 	$description_section_jeu_unique = str_replace('[ville]', $ville_name, $description_section_jeu_unique);
@@ -262,30 +262,30 @@ do_action( 'hestia_before_single_post_wrapper' );
 						}
 						?>
 					<!-- Titre -->
-					<h1 style="margin-bottom: 30px;"><?php echo esc_html($ville_name); ?></h1>
+					<h1 class="urbanquest-page-title"><?php echo esc_html($ville_name); ?></h1>
 					
 					<!-- Contenu principal -->
-					<div style="display: flex; flex-wrap: wrap; gap: 0;">
-						<div style="">
+					<div>
+						<div>
 							
-							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
+							<h3 class="urbanquest-section-subtitle"><?php echo esc_html($titre_section_terrain_de_jeu); ?></h3>
 							
 							<div>
-								<img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967" style="border-radius: 12px;" loading="lazy" />
+								<img src="<?php echo esc_url($image_section_terrain_de_jeu_url); ?>" alt="<?php echo esc_attr($ville_name); ?> - Terrain de jeu Urban Quest" width="750" height="139" class="aligncenter size-large wp-image-26967 urbanquest-image-rounded" loading="lazy" />
 							</div>
 							
 							<?php echo wp_kses_post($description_section_terrain_de_jeu); ?>
 							
-							<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+							<hr class="urbanquest-section-divider" />
 							
-							<h3 style="margin: 0 0 10px; text-align: center;"><?php echo esc_html($titre_section_jeu_unique); ?></h3>
+							<h3 class="urbanquest-section-subtitle"><?php echo esc_html($titre_section_jeu_unique); ?></h3>
 							
 							<?php 
 							// Optimiser la description avec "jeu de piste" si pas déjà présent
 							$description_optimized = $description_section_jeu_unique;
 							if (stripos($description_optimized, 'jeu de piste') === false && stripos($description_optimized, 'jeux de piste') === false) {
 								$description_optimized = str_replace('[ville]', $ville_name, $description_optimized);
-								$description_optimized = '<p style="margin: 10px 0;">Ce jeu de piste connecté vous permet de découvrir ' . esc_html($ville_name) . ' de manière ludique et interactive.</p>' . $description_optimized;
+								$description_optimized = '<p class="urbanquest-content-paragraph">Ce jeu de piste connecté vous permet de découvrir ' . esc_html($ville_name) . ' de manière ludique et interactive.</p>' . $description_optimized;
 							}
 							echo wp_kses_post($description_optimized); 
 							?>
@@ -293,26 +293,26 @@ do_action( 'hestia_before_single_post_wrapper' );
 						</div>
 					</div>
 					
-					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+					<hr class="urbanquest-section-divider" />
 					
 					<!-- Liste des jeux de la ville -->
 					<?php if (!empty($games)) : ?>
-						<h2 style="text-align: center; margin-bottom: 40px;">Jeu de piste à <?php echo esc_html($ville_name); ?> - Nos aventures</h2>
+						<h2 class="urbanquest-section-title">Jeu de piste à <?php echo esc_html($ville_name); ?> - Nos aventures</h2>
 						<?php urbanquest_display_games_grid($games, ['columns' => 4, 'show_city' => false]); ?>
 					<?php else : ?>
 						<!-- Message SEO-friendly si aucun jeu -->
-						<div style="text-align: center; padding: 60px 20px; background: #F7F9FC; border-radius: 12px; margin-bottom: 60px;">
-							<h2 style="margin-bottom: 20px; color: #1f2a37;">Jeu de piste à <?php echo esc_html($ville_name); ?> - Bientôt disponible</h2>
-							<p style="font-size: 18px; color: #6b7280; line-height: 1.6; max-width: 800px; margin: 0 auto 30px;">
+						<div class="urbanquest-empty-state">
+							<h2>Jeu de piste à <?php echo esc_html($ville_name); ?> - Bientôt disponible</h2>
+							<p>
 								Urban Quest prépare actuellement un jeu de piste connecté pour découvrir <?php echo esc_html($ville_name); ?> autrement. 
 								Ce jeu de piste innovant vous permettra d'explorer les lieux emblématiques de la ville tout en résolvant des énigmes passionnantes. Nos game designers travaillent sur des parcours uniques pour vous offrir une expérience de jeu de piste mémorable.
 							</p>
-							<p style="font-size: 16px; color: #6b7280; line-height: 1.6; max-width: 800px; margin: 0 auto 30px;">
+							<p class="small">
 								Si vous souhaitez être informé dès que ce jeu de piste sera disponible à <?php echo esc_html($ville_name); ?>, 
-								<a href="<?php echo esc_url(get_site_url() . '/contact/'); ?>" style="color: #00bbff; text-decoration: underline;">contactez-nous</a> ou 
+								<a href="<?php echo esc_url(get_site_url() . '/contact/'); ?>">contactez-nous</a> ou 
 								suivez-nous sur nos réseaux sociaux pour rester informé de nos nouveautés.
 							</p>
-							<p style="font-size: 16px; color: #6b7280; line-height: 1.6; max-width: 800px; margin: 0 auto;">
+							<p class="small">
 								En attendant, découvrez nos autres jeux de piste disponibles dans d'autres villes de France !
 							</p>
 						</div>

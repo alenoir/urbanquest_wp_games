@@ -1083,19 +1083,19 @@ function urbanquest_display_breadcrumb() {
 	
 	// Générer le HTML du breadcrumb avec un style très visible
 	?>
-	<nav class="urbanquest-breadcrumb" style="background: #1f2a37 !important; padding: 15px 0 !important; margin: 0 !important; border-bottom: 2px solid #00bbff !important; position: relative !important; z-index: 9999 !important; width: 100% !important; display: block !important;">
-		<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 15px;">
-			<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: white !important; font-size: 14px; line-height: 1.5;">
+	<nav class="urbanquest-breadcrumb">
+		<div class="container">
+			<div>
 				<?php foreach ($items as $index => $item) : ?>
 					<?php if ($index > 0) : ?>
-						<span style="color: rgba(255, 255, 255, 0.6) !important; margin: 0 8px; font-size: 18px;">›</span>
+						<span class="breadcrumb-separator">›</span>
 					<?php endif; ?>
 					<?php if (!empty($item['url'])) : ?>
-						<a href="<?php echo esc_url($item['url']); ?>" style="color: #ffffff !important; text-decoration: none; font-weight: 500; transition: opacity 0.2s ease;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+						<a href="<?php echo esc_url($item['url']); ?>">
 							<?php echo esc_html($item['label']); ?>
 						</a>
 					<?php else : ?>
-						<span style="color: #ffffff !important; font-weight: 700;">
+						<span class="breadcrumb-current">
 							<?php echo esc_html($item['label']); ?>
 						</span>
 					<?php endif; ?>
@@ -1298,17 +1298,17 @@ function urbanquest_display_breadcrumb_simple() {
 	
 	// Générer le HTML du breadcrumb simple (juste des liens)
 	?>
-	<div class="urbanquest-breadcrumb-simple" style="margin: 30px 0 20px 0; font-size: 14px; color: #666;">
+	<div class="urbanquest-breadcrumb-simple">
 		<?php foreach ($items as $index => $item) : ?>
 			<?php if ($index > 0) : ?>
-				<span style="margin: 0 6px; color: #999;">›</span>
+				<span class="breadcrumb-separator">›</span>
 			<?php endif; ?>
 			<?php if (!empty($item['url'])) : ?>
-				<a href="<?php echo esc_url($item['url']); ?>" style="color: #666; text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+				<a href="<?php echo esc_url($item['url']); ?>">
 					<?php echo esc_html($item['label']); ?>
 				</a>
 			<?php else : ?>
-				<span style="color: #333; font-weight: 500;">
+				<span class="breadcrumb-current">
 					<?php echo esc_html($item['label']); ?>
 				</span>
 			<?php endif; ?>
@@ -2314,9 +2314,9 @@ function urbanquest_display_games_grid($games, $args = []) {
 	$args = wp_parse_args($args, $defaults);
 	$col_class = 'col-md-' . (12 / $args['columns']);
 	
-	echo '<div class="row urbanquest-games-grid" style="margin-bottom: 60px;">';
+	echo '<div class="row urbanquest-games-grid">';
 	foreach ($games as $game) {
-		echo '<div class="' . esc_attr($col_class) . '" style="margin-bottom: 30px;">';
+		echo '<div class="' . esc_attr($col_class) . '">';
 		urbanquest_display_game_card($game, $args);
 		echo '</div>';
 	}
@@ -2335,10 +2335,10 @@ function urbanquest_render_jauge($valeur, $label = '') {
 	
 	ob_start();
 	?>
-	<div style="position: relative; width: 100%; height: 10px; margin-top: 8px;">
-		<div style="position: relative; width: 100%; height: 100%; border-radius: 10px; overflow: visible; background: white; border: 1px solid #E6ECF4;">
-			<div style="position: absolute; top: 0; left: 0; width: <?php echo esc_attr($pourcentage); ?>; height: 100%; background: #00bbff; border-radius: 10px; z-index: 1;"></div>
-			<div style="position: absolute; top: 0; left: <?php echo esc_attr($pourcentage); ?>; width: <?php echo esc_attr((100 - $valeur) . '%'); ?>; height: 100%; background: white; border-radius: <?php echo ($valeur <= 0) ? '10px' : '0 10px 10px 0'; ?>; z-index: 1;"></div>
+	<div class="urbanquest-progress-wrapper">
+		<div class="urbanquest-progress-bar">
+			<div class="urbanquest-progress-fill" style="width: <?php echo esc_attr($pourcentage); ?>;"></div>
+			<div class="urbanquest-progress-empty" style="left: <?php echo esc_attr($pourcentage); ?>; width: <?php echo esc_attr((100 - $valeur) . '%'); ?>; border-radius: <?php echo ($valeur <= 0) ? '10px' : '0 10px 10px 0'; ?>;"></div>
 		</div>
 	</div>
 	<?php
@@ -2700,7 +2700,7 @@ function urbanquest_enqueue_acf_ai_scripts($hook) {
 	
 	wp_enqueue_style(
 		'urbanquest-acf-ai',
-		get_stylesheet_directory_uri() . '/css/acf-ai-generate.css',
+		get_stylesheet_directory_uri() . '/css/admin-style.css',
 		array(),
 		'1.5.0' // Version mise à jour pour forcer le rechargement
 	);
