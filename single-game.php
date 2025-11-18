@@ -435,7 +435,7 @@ do_action('hestia_before_single_post_wrapper');
 										</ul>
 									</li>
 									<li style="list-style: none; display: center; align-items: flex-start; gap: 10px; width: 100%; margin: 0 auto; padding-top: 16px; padding-bottom: 24px;">
-										<div style="text-align: center;"><a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a></div></li>
+										<div style="text-align: center;"><a href="<?php echo esc_url($button_href_button); ?>" class="urbanquest-checkout-btn" data-payment-url="<?php echo esc_attr($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 18px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a></div></li>
 								</ul>
 							</section>
 						</div>
@@ -475,7 +475,7 @@ do_action('hestia_before_single_post_wrapper');
 						<?php endforeach; ?>
 					</div>
 					<div style="text-align: center; margin: 30px 0 6px;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" class="urbanquest-checkout-btn" data-payment-url="<?php echo esc_attr($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -537,7 +537,7 @@ do_action('hestia_before_single_post_wrapper');
 					<p class="p1" style="text-align: center; font-size: 16px;">Choisis ton parcours, pars à l'aventure dans la ville et mesure-toi aux autres équipes.</p>
 					<p class="p1" style="text-align: center; font-size: 16px;">Une expérience fun, rapide à lancer et 100 % autonome !</p>
 					<p style="text-align: center;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" class="urbanquest-checkout-btn" data-payment-url="<?php echo esc_attr($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
 					</p>
 
 					<?php if (!empty($related_games)) : ?>
@@ -580,7 +580,7 @@ do_action('hestia_before_single_post_wrapper');
 					</table>
 					</div>
 					<div style="text-align: center; padding-top: 30px;">
-						<a href="<?php echo esc_url($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
+						<a href="<?php echo esc_url($button_href_button); ?>" class="urbanquest-checkout-btn" data-payment-url="<?php echo esc_attr($button_href_button); ?>" <?php echo (!$button_disabled) ? 'target="_blank" rel="noopener sponsored"' : ''; ?> style="display: inline-block; background: #00bbff; color: white; font-weight: bold; font-size: 16px; padding: 10px 25px; text-decoration: none; border-radius: 999px; <?php echo esc_attr($button_style_disabled); ?>"><?php echo esc_html($button_text_button); ?></a>
 					</div>
 
 					<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
@@ -608,3 +608,190 @@ if (!is_singular('elementor_library') && !is_singular('game')) {
 ?>
 <div class="footer-wrapper">
 <?php get_footer(); ?>
+
+<script>
+(function() {
+	'use strict';
+	
+	/**
+	 * Récupère le GA4 Client ID depuis le cookie _ga
+	 * Format du cookie: GA1.2.XXXXXXXXX.YYYYYYYYY
+	 * On extrait le dernier segment (YYYYYYYYY)
+	 */
+	function getGA4ClientId() {
+		try {
+			// Lire le cookie _ga
+			const cookies = document.cookie.split(';');
+			for (let i = 0; i < cookies.length; i++) {
+				const cookie = cookies[i].trim();
+				if (cookie.indexOf('_ga=') === 0) {
+					const gaValue = cookie.substring(4); // Enlever '_ga='
+					// Le format est GA1.2.XXXXXXXXX.YYYYYYYYY
+					// On prend le dernier segment après le dernier point
+					const parts = gaValue.split('.');
+					if (parts.length >= 4) {
+						// Retourner les deux derniers segments (XXXXXXXXX.YYYYYYYYY)
+						return parts.slice(2).join('.');
+					}
+				}
+			}
+		} catch (e) {
+			console.warn('Erreur lors de la récupération du GA4 Client ID:', e);
+		}
+		return null;
+	}
+	
+	/**
+	 * Récupère les paramètres UTM de l'URL actuelle
+	 * Transmet tous les paramètres UTM présents dans l'URL vers l'API UrbanQuest
+	 * Paramètres attendus par l'API : utm_source, utm_medium, utm_campaign, utm_content
+	 */
+	function getUTMParams() {
+		const params = {};
+		const urlParams = new URLSearchParams(window.location.search);
+		// Liste complète des paramètres UTM (inclut utm_term pour compatibilité)
+		const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+		
+		utmParams.forEach(function(param) {
+			const value = urlParams.get(param);
+			if (value) {
+				params[param] = value;
+			}
+		});
+		
+		return params;
+	}
+	
+	/**
+	 * Construit l'URL de l'API avec les paramètres GA4 et UTM
+	 * Tous les paramètres sont ajoutés à la query string pour que l'API puisse les récupérer
+	 */
+	function buildCheckoutUrl(originalUrl, gaClientId, utmParams) {
+		try {
+			const url = new URL(originalUrl);
+			
+			// Ajouter le GA4 Client ID (paramètre requis par l'API)
+			if (gaClientId) {
+				url.searchParams.set('ga_client_id', gaClientId);
+			}
+			
+			// Ajouter tous les paramètres UTM présents dans l'URL
+			// L'API récupère : utm_source, utm_medium, utm_campaign, utm_content depuis la query string
+			Object.keys(utmParams).forEach(function(key) {
+				if (utmParams[key]) {
+					url.searchParams.set(key, utmParams[key]);
+				}
+			});
+			
+			return url.toString();
+		} catch (e) {
+			// Si l'URL n'est pas valide ou absolue, essayer de la construire manuellement
+			let separator = originalUrl.indexOf('?') !== -1 ? '&' : '?';
+			let newUrl = originalUrl;
+			
+			// Ajouter le GA4 Client ID
+			if (gaClientId) {
+				newUrl += separator + 'ga_client_id=' + encodeURIComponent(gaClientId);
+				separator = '&';
+			}
+			
+			// Ajouter tous les paramètres UTM
+			Object.keys(utmParams).forEach(function(key) {
+				if (utmParams[key]) {
+					newUrl += separator + key + '=' + encodeURIComponent(utmParams[key]);
+					separator = '&';
+				}
+			});
+			
+			return newUrl;
+		}
+	}
+	
+	/**
+	 * Gère le clic sur le bouton de checkout
+	 */
+	function handleCheckoutClick(event) {
+		const button = event.currentTarget;
+		const paymentUrl = button.getAttribute('data-payment-url');
+		
+		// Ne rien faire si le bouton est désactivé ou si l'URL est invalide
+		if (!paymentUrl || paymentUrl === '#' || button.style.pointerEvents === 'none') {
+			return;
+		}
+		
+		// Empêcher la redirection par défaut
+		event.preventDefault();
+		
+		// Récupérer le GA4 Client ID et les UTM
+		const gaClientId = getGA4ClientId();
+		const utmParams = getUTMParams();
+		
+		// Construire l'URL avec les paramètres
+		const checkoutUrl = buildCheckoutUrl(paymentUrl, gaClientId, utmParams);
+		
+		// Debug: afficher les paramètres transmis (désactiver en production)
+		// console.log('GA4 Client ID:', gaClientId);
+		// console.log('UTM Params:', utmParams);
+		// console.log('Checkout URL:', checkoutUrl);
+		
+		// Appeler l'API UrbanQuest
+		// Note: Si l'API doit être appelée en POST ou nécessite une réponse JSON,
+		// il faudra adapter cette partie selon les spécifications de l'API
+		fetch(checkoutUrl, {
+			method: 'GET',
+			headers: {
+				'Accept': 'application/json',
+			},
+			redirect: 'manual' // Ne pas suivre automatiquement la redirection
+		})
+		.then(function(response) {
+			// Si l'API retourne une URL de redirection dans le JSON
+			if (response.ok && response.headers.get('content-type') && response.headers.get('content-type').includes('application/json')) {
+				return response.json().then(function(data) {
+					if (data.checkout_url || data.url || data.redirect_url) {
+						window.location.href = data.checkout_url || data.url || data.redirect_url;
+					} else {
+						// Fallback: utiliser l'URL originale
+						window.location.href = checkoutUrl;
+					}
+				});
+			}
+			// Si l'API retourne directement une redirection HTTP
+			if (response.status >= 300 && response.status < 400) {
+				const redirectUrl = response.headers.get('Location');
+				if (redirectUrl) {
+					window.location.href = redirectUrl;
+					return;
+				}
+			}
+			// Fallback: rediriger vers l'URL construite
+			window.location.href = checkoutUrl;
+		})
+		.catch(function(error) {
+			console.error('Erreur lors de l\'appel à l\'API UrbanQuest:', error);
+			// En cas d'erreur, rediriger quand même vers l'URL avec les paramètres
+			window.location.href = checkoutUrl;
+		});
+	}
+	
+	// Attendre que le DOM soit chargé
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
+	}
+	
+	function init() {
+		// Attacher les event listeners aux boutons de checkout
+		const checkoutButtons = document.querySelectorAll('.urbanquest-checkout-btn');
+		
+		checkoutButtons.forEach(function(button) {
+			// Ne pas attacher l'event listener si le bouton est désactivé
+			const paymentUrl = button.getAttribute('data-payment-url');
+			if (paymentUrl && paymentUrl !== '#' && button.style.pointerEvents !== 'none') {
+				button.addEventListener('click', handleCheckoutClick);
+			}
+		});
+	}
+})();
+</script>
