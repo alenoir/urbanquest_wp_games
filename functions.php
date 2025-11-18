@@ -304,6 +304,75 @@ function urbanquest_game_permalink($permalink, $post, $leavename) {
 add_filter('post_type_link', 'urbanquest_game_permalink', 10, 3);
 
 /**
+ * Modifier le lien canonique Yoast SEO pour les jeux
+ * Utilise la nouvelle URL réécrite au lieu de l'ancienne
+ */
+function urbanquest_yoast_canonical($canonical) {
+	if (!is_singular('game')) {
+		return $canonical;
+	}
+	
+	global $post;
+	if (!$post || $post->post_type !== 'game' || 'publish' != $post->post_status) {
+		return $canonical;
+	}
+	
+	// Construire l'URL personnalisée comme dans urbanquest_game_permalink
+	$city_post = get_field('city', $post->ID);
+	$ville_id = urbanquest_extract_acf_relationship_id($city_post);
+	
+	if (!$ville_id) {
+		return $canonical;
+	}
+	
+	$ville_slug = urbanquest_get_post_slug($ville_id);
+	$game_slug = $post->post_name;
+	
+	if (empty($ville_slug) || empty($game_slug)) {
+		return $canonical;
+	}
+	
+	$custom_permalink = home_url('/jeux-de-piste/' . $ville_slug . '/' . $game_slug . '/');
+	
+	return $custom_permalink;
+}
+add_filter('wpseo_canonical', 'urbanquest_yoast_canonical', 10, 1);
+
+/**
+ * Modifier l'URL Open Graph Yoast SEO pour les jeux
+ */
+function urbanquest_yoast_opengraph_url($url) {
+	if (!is_singular('game')) {
+		return $url;
+	}
+	
+	global $post;
+	if (!$post || $post->post_type !== 'game' || 'publish' != $post->post_status) {
+		return $url;
+	}
+	
+	// Construire l'URL personnalisée comme dans urbanquest_game_permalink
+	$city_post = get_field('city', $post->ID);
+	$ville_id = urbanquest_extract_acf_relationship_id($city_post);
+	
+	if (!$ville_id) {
+		return $url;
+	}
+	
+	$ville_slug = urbanquest_get_post_slug($ville_id);
+	$game_slug = $post->post_name;
+	
+	if (empty($ville_slug) || empty($game_slug)) {
+		return $url;
+	}
+	
+	$custom_permalink = home_url('/jeux-de-piste/' . $ville_slug . '/' . $game_slug . '/');
+	
+	return $custom_permalink;
+}
+add_filter('wpseo_opengraph_url', 'urbanquest_yoast_opengraph_url', 10, 1);
+
+/**
  * Générer les permaliens personnalisés pour les villes
  * Format : /jeux-de-piste/%ville%
  */
@@ -2728,8 +2797,9 @@ add_action('admin_enqueue_scripts', 'urbanquest_enqueue_acf_ai_scripts');
 // ============================================================================
 
 /**
- * Initialise les fonctionnalités par défaut pour un nouveau jeu
- * Utilise le hook acf/load_value pour charger les valeurs par défaut si le champ est vide
+ * Initialise les fonctionnalités par défaut pour un nouveau jeu lors du chargement dans l'admin
+ * Utilise acf/load_value UNIQUEMENT pour les nouveaux posts non encore initialisés
+ * Cela permet d'afficher les valeurs par défaut dans l'interface admin lors de la création
  */
 function urbanquest_init_default_features($value, $post_id, $field) {
 	// Ne s'applique qu'au champ pourquoi_choisir_features
@@ -2737,13 +2807,21 @@ function urbanquest_init_default_features($value, $post_id, $field) {
 		return $value;
 	}
 	
-	// Si le champ a déjà une valeur, ne pas l'écraser
+	// Si le champ a déjà une valeur avec au moins une entrée valide, la retourner telle quelle
 	if (!empty($value) && is_array($value) && count($value) > 0) {
-		return $value;
+		$has_valid_entry = false;
+		foreach ($value as $feature) {
+			if (!empty($feature['icone']) || !empty($feature['titre']) || !empty($feature['description'])) {
+				$has_valid_entry = true;
+				break;
+			}
+		}
+		if ($has_valid_entry) {
+			return $value;
+		}
 	}
 	
 	// Vérifier si c'est un post de type 'game'
-	// Pour les nouveaux posts, $post_id peut être "new_post" ou un ID numérique
 	$post_type = '';
 	if (is_numeric($post_id)) {
 		$post = get_post($post_id);
@@ -2763,7 +2841,19 @@ function urbanquest_init_default_features($value, $post_id, $field) {
 		return $value;
 	}
 	
-	// Valeurs par défaut des 3 fonctionnalités
+	// IMPORTANT : Ne retourner les valeurs par défaut QUE si le post n'a jamais été initialisé
+	// Cela permet d'afficher les valeurs par défaut dans l'admin lors de la création
+	// mais empêche toute réinitialisation après que l'admin ait modifié ou supprimé les fonctionnalités
+	if (is_numeric($post_id)) {
+		$already_initialized = get_post_meta($post_id, '_features_default_initialized', true);
+		if ($already_initialized === 'yes') {
+			// Le post a déjà été initialisé, retourner la valeur telle quelle (même si vide)
+			// pour permettre à l'admin de supprimer toutes les fonctionnalités s'il le souhaite
+			return $value;
+		}
+	}
+	
+	// Valeurs par défaut des 3 fonctionnalités (uniquement pour les nouveaux posts non initialisés)
 	$default_features = array(
 		array(
 			'icone' => 'calendar-heart',
@@ -2787,44 +2877,105 @@ function urbanquest_init_default_features($value, $post_id, $field) {
 add_filter('acf/load_value/name=pourquoi_choisir_features', 'urbanquest_init_default_features', 10, 3);
 
 /**
- * Initialise les fonctionnalités par défaut lors de la sauvegarde d'un nouveau jeu
- * Utilise le hook acf/save_post pour s'assurer que les valeurs sont sauvegardées
+ * Marque les nouveaux posts de type 'game' lors de leur création
  */
-function urbanquest_save_default_features($post_id) {
+function urbanquest_mark_new_game_post($post_id, $post, $update) {
+	// Ne s'exécute QUE lors de la création (pas lors de la mise à jour)
+	if ($update) {
+		return;
+	}
+	
+	// Ne s'applique qu'aux posts de type 'game'
+	if ($post->post_type !== 'game') {
+		return;
+	}
+	
+	// Marquer ce post comme nouveau pour l'initialisation des fonctionnalités
+	update_post_meta($post_id, '_is_new_game_post', 'yes');
+}
+add_action('wp_insert_post', 'urbanquest_mark_new_game_post', 10, 3);
+
+/**
+ * Initialise les fonctionnalités par défaut UNIQUEMENT lors de la création d'un nouveau jeu
+ * S'exécute après que ACF ait sauvegardé ses champs
+ */
+function urbanquest_init_default_features_on_create($post_id) {
 	// Ne s'applique qu'aux posts de type 'game'
 	$post = get_post($post_id);
 	if (!$post || $post->post_type !== 'game') {
 		return;
 	}
 	
-	// Vérifier si le champ existe et est vide
+	// VÉRIFICATION PRINCIPALE : Si le post a déjà été initialisé, ne JAMAIS toucher
+	// Cette vérification doit être faite EN PREMIER pour éviter toute réinitialisation
+	$already_initialized = get_post_meta($post_id, '_features_default_initialized', true);
+	if ($already_initialized === 'yes') {
+		// Nettoyer le flag temporaire s'il existe encore
+		delete_post_meta($post_id, '_is_new_game_post');
+		return; // Déjà initialisé, ne jamais toucher - même si le champ est vide
+	}
+	
+	// Vérifier si c'est un nouveau post (marqué lors de wp_insert_post)
+	$is_new_post = get_post_meta($post_id, '_is_new_game_post', true) === 'yes';
+	
+	// Si ce n'est pas un nouveau post, ne rien faire
+	if (!$is_new_post) {
+		return;
+	}
+	
+	// Valeurs par défaut des 3 fonctionnalités
+	$default_features = array(
+		array(
+			'icone' => 'calendar-heart',
+			'titre' => '100% libre',
+			'description' => 'Vous lancez la session quand vous voulez, où vous voulez.'
+		),
+		array(
+			'icone' => 'smartphone',
+			'titre' => 'Ultra simple',
+			'description' => 'Vos instructions de jeu par e-mail, votre smartphone… c\'est tout.'
+		),
+		array(
+			'icone' => 'swords',
+			'titre' => 'Fun & challenge',
+			'description' => 'Défis variés, énigmes malignes, score et classement.'
+		)
+	);
+	
+	// Vérifier si le champ existe déjà avec des données
 	$features = get_field('pourquoi_choisir_features', $post_id);
 	
-	// Si le champ est vide ou n'existe pas, initialiser avec les valeurs par défaut
-	if (empty($features) || !is_array($features) || count($features) === 0) {
-		$default_features = array(
-			array(
-				'icone' => 'calendar-heart',
-				'titre' => '100% libre',
-				'description' => 'Vous lancez la session quand vous voulez, où vous voulez.'
-			),
-			array(
-				'icone' => 'smartphone',
-				'titre' => 'Ultra simple',
-				'description' => 'Vos instructions de jeu par e-mail, votre smartphone… c\'est tout.'
-			),
-			array(
-				'icone' => 'swords',
-				'titre' => 'Fun & challenge',
-				'description' => 'Défis variés, énigmes malignes, score et classement.'
-			)
-		);
-		
-		// Sauvegarder les valeurs par défaut
-		update_field('pourquoi_choisir_features', $default_features, $post_id);
+	// Compter les fonctionnalités valides (au moins un champ rempli)
+	$valid_features_count = 0;
+	$has_empty_items = false;
+	if (!empty($features) && is_array($features)) {
+		foreach ($features as $feature) {
+			if (!empty($feature['icone']) || !empty($feature['titre']) || !empty($feature['description'])) {
+				$valid_features_count++;
+			} else {
+				$has_empty_items = true;
+			}
+		}
 	}
+	
+	// Si aucune fonctionnalité valide OU si le champ contient des items vides,
+	// initialiser/remplacer avec les valeurs par défaut
+	if ($valid_features_count === 0) {
+		// Sauvegarder les valeurs par défaut (remplace les items vides si nécessaire)
+		update_field('pourquoi_choisir_features', $default_features, $post_id);
+		
+		// Marquer comme initialisé seulement après avoir réellement initialisé
+		update_post_meta($post_id, '_features_default_initialized', 'yes');
+	} else {
+		// Si des fonctionnalités valides existent déjà (l'admin les a peut-être créées manuellement),
+		// marquer aussi comme initialisé pour éviter toute réinitialisation future
+		update_post_meta($post_id, '_features_default_initialized', 'yes');
+	}
+	
+	// Nettoyer le flag temporaire
+	delete_post_meta($post_id, '_is_new_game_post');
 }
-add_action('acf/save_post', 'urbanquest_save_default_features', 20);
+add_action('acf/save_post', 'urbanquest_init_default_features_on_create', 30);
 
 // ============================================================================
 // CRÉATION AUTOMATIQUE DES RÉGIONS FRANÇAISES

@@ -355,42 +355,12 @@ do_action('hestia_before_single_post_wrapper');
 		)
 	);
 	
-	$pourquoi_choisir_features = array();
-	$features_repeater = get_field('pourquoi_choisir_features');
-	if ($features_repeater && is_array($features_repeater)) {
-		foreach ($features_repeater as $feature) {
-			$pourquoi_choisir_features[] = array(
-				'icone' => !empty($feature['icone']) ? $feature['icone'] : '',
-				'titre' => !empty($feature['titre']) ? $feature['titre'] : '',
-				'description' => !empty($feature['description']) ? $feature['description'] : ''
-			);
-		}
-	}
-	// Fallback pour compatibilité avec anciens champs (migration progressive)
-	if (empty($pourquoi_choisir_features)) {
-		for ($i = 1; $i <= 3; $i++) {
-			$icone = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_icone', $default_features[$i-1]['icone']);
-			$titre = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_titre', $default_features[$i-1]['titre']);
-			$description = urbanquest_get_field_with_default('pourquoi_choisir_feature_' . $i . '_description', $default_features[$i-1]['description']);
-			
-			$pourquoi_choisir_features[] = array(
-				'icone' => $icone,
-				'titre' => $titre,
-				'description' => $description
-			);
-		}
-	}
-	// Appliquer les valeurs par défaut si vides
-	foreach ($pourquoi_choisir_features as $index => &$feature) {
-		if (empty($feature['icone']) && isset($default_features[$index])) {
-			$feature['icone'] = $default_features[$index]['icone'];
-		}
-		if (empty($feature['titre']) && isset($default_features[$index])) {
-			$feature['titre'] = $default_features[$index]['titre'];
-		}
-		if (empty($feature['description']) && isset($default_features[$index])) {
-			$feature['description'] = $default_features[$index]['description'];
-		}
+	// Récupérer les fonctionnalités depuis le repeater ACF
+	$pourquoi_choisir_features = get_field('pourquoi_choisir_features');
+	
+	// Si le repeater est vide, utiliser les valeurs par défaut
+	if (empty($pourquoi_choisir_features) || !is_array($pourquoi_choisir_features)) {
+		$pourquoi_choisir_features = $default_features;
 	}
 	
 	// Le bouton utilise directement le bouton de paiement existant
