@@ -202,6 +202,16 @@ do_action('hestia_before_single_post_wrapper');
 			position: static !important;
 			margin-top: 30px;
 		}
+		
+		/* Grille des fonctionnalités : un item par ligne sur mobile */
+		.game-features-grid {
+			grid-template-columns: 1fr !important;
+			gap: 20px !important;
+		}
+		
+		.game-feature-card {
+			width: 100% !important;
+		}
 	}
 </style>
 
