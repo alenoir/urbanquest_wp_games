@@ -221,6 +221,29 @@ do_action( 'hestia_before_single_post_wrapper' );
 		$pays_description = "Découvrez les meilleurs jeux de piste connectés Urban Quest en " . esc_html($pays_name) . ". Ce jeu de piste innovant vous permet d'explorer nos différentes régions et villes pour vivre une expérience unique et immersive. Parcourez les rues, résolvez des énigmes et découvrez le patrimoine local en vous amusant. Urban Quest vous propose des aventures de jeu de piste adaptées à tous les âges, à faire en famille ou entre amis.";
 	}
 	
+	// Nouveaux champs ACF
+	$titre_principal = get_field('titre_principal_pays') ?: 'Les jeux UrbanQuest';
+	$description_intro = get_field('description_intro_pays');
+	$titre_section_jeux = get_field('titre_section_jeux_disponibles') ?: 'Nos jeux de pistes à travers la France';
+	$sous_titre_section_jeux = get_field('sous_titre_section_jeux') ?: 'Déjà disponibles dans plus de 35 villes, nous ouvrons aux 4 coins de l\'hexagone ✌️';
+	
+	// Image principale
+	$image_principale = get_field('image_principale_pays');
+	$image_principale_url = '';
+	if ($image_principale) {
+		if (is_array($image_principale) && isset($image_principale['url'])) {
+			$image_principale_url = $image_principale['url'];
+		} elseif (is_numeric($image_principale)) {
+			$image_principale_url = wp_get_attachment_image_url($image_principale, 'large');
+		}
+	}
+	if (empty($image_principale_url)) {
+		$image_principale_url = get_the_post_thumbnail_url($pays_id, 'large') ?: get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
+	}
+	
+	// Pages supplémentaires
+	$autres_jeux_pays = get_field('autres_jeux_pays', $pays_id);
+	
 	// Récupérer tous les jeux de ce pays (OPTIMISÉ avec meta_query)
 	$games = urbanquest_get_games_by_country($pays_id);
 	
@@ -275,34 +298,102 @@ do_action( 'hestia_before_single_post_wrapper' );
 					?>
 
 					<!-- Titre -->
-					<h1 style="margin-bottom: 30px;"><?php echo esc_html($pays_name); ?></h1>
+					<h1 style="margin-bottom: 30px; text-align: center;"><?php echo esc_html($titre_principal); ?></h1>
 					
-					<!-- Description -->
-					<div class="pays-description" style="margin-bottom: 60px;">
-						<?php echo wpautop($pays_description); ?>
+					<!-- Description introductive -->
+					<?php if (!empty($description_intro)) : ?>
+					<div class="description-intro" style="margin-bottom: 60px; text-align: center;">
+						<?php echo wp_kses_post($description_intro); ?>
 					</div>
+					<?php endif; ?>
+					
+					<!-- Image principale -->
+					<?php if (!empty($image_principale_url)) : ?>
+					<div class="image-principale" style="margin: 30px 0; text-align: center;">
+						<img src="<?php echo esc_url($image_principale_url); ?>" alt="<?php echo esc_attr($titre_principal); ?>" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" />
+					</div>
+					<?php endif; ?>
 					
 					<!-- Liste des jeux -->
 					<?php if (!empty($games)) : ?>
-						<h2 style="margin-bottom: 40px;">Jeu de piste en <?php echo esc_html($pays_name); ?> - Nos aventures</h2>
+						<h2 style="margin-bottom: 40px; text-align: center;"><?php echo esc_html($titre_section_jeux); ?></h2>
+						<?php if (!empty($sous_titre_section_jeux)) : ?>
+							<p style="margin-bottom: 30px; text-align: center; color: #6b7280;"><?php echo esc_html($sous_titre_section_jeux); ?></p>
+						<?php endif; ?>
 						<?php urbanquest_display_games_grid($games, ['columns' => 4, 'layout' => 'simple', 'show_city' => true]); ?>
 					<?php endif; ?>
 					
 					<!-- Liste des régions -->
 					<?php if (!empty($filtered_regions)) : ?>
 						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
-						<h2 style="margin-bottom: 30px;">Les régions de <?php echo esc_html($pays_name); ?></h2>
+						<h2 style="margin-bottom: 30px; text-align: center;">Les régions de <?php echo esc_html($pays_name); ?></h2>
 						<div class="row" style="margin-bottom: 60px;">
 							<?php foreach ($filtered_regions as $region) : 
 								$region_id = $region->ID;
 								$region_name = $region->post_title;
 								$region_permalink = get_permalink($region_id);
 							?>
-							<div class="col-md-4" style="margin-bottom: 20px;">
-								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+							<div class="col-md-4" style="margin-bottom: 20px; display: flex;">
+								<div style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease; height: 150px; width: 100%; display: flex; flex-direction: column; justify-content: center;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 									<h3 style="margin: 0 0 15px; font-size: 22px; color: #1f2a37;"><?php echo esc_html($region_name); ?></h3>
 									<a href="<?php echo esc_url($region_permalink); ?>" style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 10px 25px; text-decoration: none; border-radius: 999px; font-size: 14px;">
 										Voir le jeu de piste de <?php echo esc_html($region_name); ?>
+									</a>
+								</div>
+							</div>
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+					
+					<!-- Section Autres jeux (pages supplémentaires) -->
+					<?php 
+					if (!empty($autres_jeux_pays) && is_array($autres_jeux_pays)) : 
+					?>
+						<hr style="margin: 60px 0; border: none; border-top: 1px solid #ddd;" />
+						<h2 style="margin-bottom: 30px; text-align: center;">Autres jeux</h2>
+						<div class="row" style="margin-bottom: 60px;">
+							<?php foreach ($autres_jeux_pays as $item) : 
+								$page = isset($item['page']) ? $item['page'] : null;
+								
+								if (is_numeric($page)) {
+									$page_id = intval($page);
+									$page_obj = get_post($page_id);
+									if (!$page_obj) continue;
+								} elseif (is_object($page) && isset($page->ID)) {
+									$page_id = $page->ID;
+								} else {
+									continue;
+								}
+								
+								$page_title = get_the_title($page_id);
+								$page_permalink = get_permalink($page_id);
+								$page_excerpt = get_the_excerpt($page_id);
+								if (empty($page_excerpt)) {
+									$page_content = wp_strip_all_tags(get_post_field('post_content', $page_id));
+									$page_excerpt = wp_trim_words($page_content, 20);
+								}
+								if (empty($page_excerpt)) {
+									$page_excerpt = 'Découvrez ce jeu de piste unique.';
+								}
+								$page_excerpt = wp_trim_words(wp_strip_all_tags($page_excerpt), 20, '...');
+								
+								$page_image = get_the_post_thumbnail_url($page_id, 'medium') ?: get_site_url() . '/wp-content/uploads/2018/08/cropped-cropped-fondurbanquest.jpg';
+							?>
+							<div class="col-md-3 col-sm-6 col-xs-12" style="margin-bottom: 30px; display: flex;">
+								<div class="urbanquest-game-card" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; height: 400px; width: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+									<a href="<?php echo esc_url($page_permalink); ?>" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%;">
+										<div style="position: relative; width: 100%; height: 200px; overflow: hidden;">
+											<img src="<?php echo esc_url($page_image); ?>" alt="<?php echo esc_attr($page_title); ?>" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+										</div>
+										<div style="padding: 20px; flex: 1; display: flex; flex-direction: column;">
+											<h3 style="margin: 0 0 10px; font-size: 20px; color: #1f2a37; line-height: 1.3;"><?php echo esc_html($page_title); ?></h3>
+											<?php if (!empty($page_excerpt)) : ?>
+												<p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.5; flex: 1;"><?php echo esc_html($page_excerpt); ?></p>
+											<?php endif; ?>
+											<div style="text-align: center; margin-top: auto;">
+												<span style="display: inline-block; background: #00bbff; color: white; font-weight: bold; padding: 8px 20px; border-radius: 999px; font-size: 14px;">Découvrir le jeu</span>
+											</div>
+										</div>
 									</a>
 								</div>
 							</div>

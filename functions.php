@@ -2385,7 +2385,7 @@ function urbanquest_display_games_grid($games, $args = []) {
 	
 	echo '<div class="row urbanquest-games-grid">';
 	foreach ($games as $game) {
-		echo '<div class="' . esc_attr($col_class) . '">';
+		echo '<div class="' . esc_attr($col_class) . '" style="display: flex; margin-bottom: 30px;">';
 		urbanquest_display_game_card($game, $args);
 		echo '</div>';
 	}

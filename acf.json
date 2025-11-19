@@ -1071,6 +1071,262 @@
     "display_title": ""
   },
   {
+    "key": "group_country_fields",
+    "title": "Pays",
+    "fields": [
+      {
+        "key": "field_tab_country_contenu",
+        "label": "Contenu de la page",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
+        "key": "field_country_description_pays",
+        "label": "Description du pays",
+        "name": "description_pays",
+        "aria-label": "",
+        "type": "textarea",
+        "instructions": "Description du pays affichée sur la page. Si vide, utilise le contenu de la page.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "",
+        "maxlength": "",
+        "rows": 4,
+        "allow_in_bindings": 0,
+        "placeholder": "",
+        "new_lines": ""
+      },
+      {
+        "key": "field_country_titre_principal",
+        "label": "Titre principal de la page",
+        "name": "titre_principal_pays",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre affiché en haut de la page (ex: 'Les jeux UrbanQuest'). Si vide, utilise 'Les jeux UrbanQuest' par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "Les jeux UrbanQuest",
+        "maxlength": "",
+        "allow_in_bindings": 0,
+        "placeholder": "Les jeux UrbanQuest",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_country_description_intro",
+        "label": "Description introductive",
+        "name": "description_intro_pays",
+        "aria-label": "",
+        "type": "wysiwyg",
+        "instructions": "Texte d'introduction affiché sous le titre principal. Si vide, utilise le texte par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "Urban Quest un jeu de piste mixé à une véritable course contre la montre, dans lequel l'esprit d'équipe et la communication seront les maîtres mots.\nPar équipe de 2 à 5 joueurs, vous explorez la ville muni de notre smartphone de jeu afin de résoudre un maximum d'énigmes et de défis.\nÀ la fin de l'heure de jeu, l'équipe ayant cumulé le plus de point remporte la première place !\nLogique, déduction, culot et stratégie seront vos meilleurs alliés.",
+        "tabs": "all",
+        "toolbar": "full",
+        "media_upload": 1,
+        "delay": 0
+      },
+      {
+        "key": "field_country_titre_section_jeux",
+        "label": "Titre section jeux disponibles",
+        "name": "titre_section_jeux_disponibles",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Titre de la section affichant les jeux disponibles (ex: 'Nos jeux de pistes à travers la France'). Si vide, utilise 'Nos jeux de pistes à travers la France' par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "Nos jeux de pistes à travers la France",
+        "maxlength": "",
+        "allow_in_bindings": 0,
+        "placeholder": "Nos jeux de pistes à travers la France",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_country_sous_titre_section_jeux",
+        "label": "Sous-titre section jeux disponibles",
+        "name": "sous_titre_section_jeux",
+        "aria-label": "",
+        "type": "text",
+        "instructions": "Sous-titre affiché sous le titre principal (ex: 'Déjà disponibles dans plus de 35 villes, nous ouvrons aux 4 coins de l'hexagone ✌️'). Si vide, utilise le texte par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "Déjà disponibles dans plus de 35 villes, nous ouvrons aux 4 coins de l'hexagone ✌️",
+        "maxlength": "",
+        "allow_in_bindings": 0,
+        "placeholder": "Déjà disponibles dans plus de 35 villes, nous ouvrons aux 4 coins de l'hexagone ✌️",
+        "prepend": "",
+        "append": ""
+      },
+      {
+        "key": "field_country_image_principale",
+        "label": "Image principale",
+        "name": "image_principale_pays",
+        "aria-label": "",
+        "type": "image",
+        "instructions": "Image principale affichée sur la page. Dimensions recommandées : 1200x630px (format Open Graph). Si vide, utilise l'image à la une du post ou l'image par défaut.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "return_format": "array",
+        "library": "all",
+        "min_width": "",
+        "min_height": "",
+        "min_size": "",
+        "max_width": "",
+        "max_height": "",
+        "max_size": "",
+        "mime_types": "",
+        "preview_size": "medium"
+      },
+      {
+        "key": "field_tab_country_autres_jeux",
+        "label": "Autres jeux",
+        "name": "",
+        "type": "tab",
+        "instructions": "",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "placement": "top",
+        "endpoint": 0
+      },
+      {
+        "key": "field_country_autres_jeux",
+        "label": "Pages supplémentaires",
+        "name": "autres_jeux_pays",
+        "aria-label": "",
+        "type": "repeater",
+        "instructions": "Ajoutez des pages WordPress supplémentaires (villes ou autres jeux) à afficher dans la section \"Autres jeux\" après la liste des régions. Utile pour ajouter des villes qui ne sont pas encore dans la structure normale.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "layout": "block",
+        "pagination": 0,
+        "min": 0,
+        "max": 0,
+        "collapsed": "",
+        "button_label": "Ajouter une page",
+        "rows_per_page": 20,
+        "sub_fields": [
+          {
+            "key": "field_country_autres_jeux_page",
+            "label": "Page",
+            "name": "page",
+            "aria-label": "",
+            "type": "post_object",
+            "instructions": "Sélectionnez une page WordPress existante",
+            "required": 1,
+            "conditional_logic": 0,
+            "wrapper": {
+              "width": "",
+              "class": "",
+              "id": ""
+            },
+            "post_type": ["page"],
+            "taxonomy": "",
+            "return_format": "object",
+            "multiple": 0,
+            "allow_null": 0,
+            "ui": 1
+          }
+        ]
+      },
+      {
+        "key": "field_country_regions",
+        "label": "Régions de ce pays",
+        "name": "regions",
+        "aria-label": "",
+        "type": "relationship",
+        "instructions": "Ce champ est automatiquement rempli par la relation bidirectionnelle",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "post_type": ["region"],
+        "post_status": "",
+        "taxonomy": "",
+        "filters": ["search", "post_type"],
+        "return_format": "id",
+        "min": 0,
+        "max": 0,
+        "elements": "",
+        "bidirectional": 1,
+        "bidirectional_target": ["field_690dc2e51530b"]
+      }
+    ],
+    "location": [
+      [
+        {
+          "param": "post_type",
+          "operator": "==",
+          "value": "country"
+        }
+      ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "show_in_rest": 0,
+    "display_title": ""
+  },
+  {
     "key": "group_690dc3b9705a6",
     "title": "Ville",
     "fields": [

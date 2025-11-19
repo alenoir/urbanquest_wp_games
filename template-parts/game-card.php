@@ -47,7 +47,7 @@ if ($args['excerpt_length'] > 0) {
 // Layout card (par défaut)
 if ($args['layout'] === 'card') :
 ?>
-<div class="urbanquest-game-card" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; height: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+<div class="urbanquest-game-card" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; height: 400px; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 	<a href="<?php echo esc_url($game_permalink); ?>" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%;">
 		<div style="position: relative; width: 100%; height: 200px; overflow: hidden;">
 			<img 
@@ -81,7 +81,7 @@ if ($args['layout'] === 'card') :
 // Layout simple (même style que card mais pour les grilles)
 elseif ($args['layout'] === 'simple') :
 ?>
-<div class="urbanquest-game-card" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; height: 100%; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+<div class="urbanquest-game-card" style="background: #F7F9FC; border: 1px solid #E6ECF4; border-radius: 12px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; height: 400px; display: flex; flex-direction: column;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.1)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
 	<a href="<?php echo esc_url($game_permalink); ?>" style="text-decoration: none; color: inherit; display: flex; flex-direction: column; height: 100%;">
 		<div style="position: relative; width: 100%; height: 200px; overflow: hidden;">
 			<img 
