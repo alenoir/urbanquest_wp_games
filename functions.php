@@ -2797,64 +2797,10 @@ add_action('admin_enqueue_scripts', 'urbanquest_enqueue_acf_ai_scripts');
 // ============================================================================
 
 /**
- * Initialise les fonctionnalités par défaut pour un nouveau jeu lors du chargement dans l'admin
- * Utilise acf/load_value UNIQUEMENT pour les nouveaux posts non encore initialisés
- * Cela permet d'afficher les valeurs par défaut dans l'interface admin lors de la création
+ * Valeurs par défaut des fonctionnalités (fonction helper pour éviter la duplication)
  */
-function urbanquest_init_default_features($value, $post_id, $field) {
-	// Ne s'applique qu'au champ pourquoi_choisir_features
-	if ($field['name'] !== 'pourquoi_choisir_features') {
-		return $value;
-	}
-	
-	// Si le champ a déjà une valeur avec au moins une entrée valide, la retourner telle quelle
-	if (!empty($value) && is_array($value) && count($value) > 0) {
-		$has_valid_entry = false;
-		foreach ($value as $feature) {
-			if (!empty($feature['icone']) || !empty($feature['titre']) || !empty($feature['description'])) {
-				$has_valid_entry = true;
-				break;
-			}
-		}
-		if ($has_valid_entry) {
-			return $value;
-		}
-	}
-	
-	// Vérifier si c'est un post de type 'game'
-	$post_type = '';
-	if (is_numeric($post_id)) {
-		$post = get_post($post_id);
-		if ($post) {
-			$post_type = $post->post_type;
-		}
-	} else {
-		// Pour les nouveaux posts, vérifier le type depuis la requête globale
-		global $typenow;
-		if (isset($typenow) && $typenow === 'game') {
-			$post_type = 'game';
-		}
-	}
-	
-	// Ne s'applique qu'aux posts de type 'game'
-	if ($post_type !== 'game') {
-		return $value;
-	}
-	
-	// IMPORTANT : Ne retourner les valeurs par défaut QUE si le post n'a jamais été initialisé
-	// Cela permet d'afficher les valeurs par défaut dans l'admin lors de la création
-	// mais empêche toute réinitialisation après que l'admin ait modifié ou supprimé les fonctionnalités
-	if (is_numeric($post_id)) {
-		$already_initialized = get_post_meta($post_id, '_features_default_initialized', true);
-		if ($already_initialized === 'yes') {
-			// Le post a déjà été initialisé, retourner la valeur telle quelle (même si vide)
-			// pour permettre à l'admin de supprimer toutes les fonctionnalités s'il le souhaite
-			return $value;
-		}
-	}
-	
-	// Valeurs par défaut des 3 fonctionnalités (uniquement pour les nouveaux posts non initialisés)
-	$default_features = array(
+function urbanquest_get_default_features() {
+	return array(
 		array(
 			'icone' => 'calendar-heart',
 			'titre' => '100% libre',
@@ -2871,111 +2817,139 @@ function urbanquest_init_default_features($value, $post_id, $field) {
 			'description' => 'Défis variés, énigmes malignes, score et classement.'
 		)
 	);
-	
-	return $default_features;
 }
-add_filter('acf/load_value/name=pourquoi_choisir_features', 'urbanquest_init_default_features', 10, 3);
 
 /**
- * Marque les nouveaux posts de type 'game' lors de leur création
+ * Initialise les features par défaut lors de la création d'un nouveau jeu
+ * S'exécute immédiatement après la création du post
  */
-function urbanquest_mark_new_game_post($post_id, $post, $update) {
+function urbanquest_init_features_on_new_game($post_id, $post, $update) {
 	// Ne s'exécute QUE lors de la création (pas lors de la mise à jour)
 	if ($update) {
 		return;
 	}
 	
 	// Ne s'applique qu'aux posts de type 'game'
-	if ($post->post_type !== 'game') {
+	if (!$post || $post->post_type !== 'game') {
 		return;
 	}
 	
-	// Marquer ce post comme nouveau pour l'initialisation des fonctionnalités
-	update_post_meta($post_id, '_is_new_game_post', 'yes');
+	// Valeurs par défaut des 3 fonctionnalités
+	$default_features = urbanquest_get_default_features();
+	
+	// Vérifier si les features sont déjà remplies
+	$existing_features = get_field('pourquoi_choisir_features', $post_id);
+	$has_valid_features = false;
+	
+	if (!empty($existing_features) && is_array($existing_features)) {
+		foreach ($existing_features as $feature) {
+			$has_icone = isset($feature['icone']) && !empty(trim($feature['icone']));
+			$has_titre = isset($feature['titre']) && !empty(trim($feature['titre']));
+			$has_description = isset($feature['description']) && !empty(trim($feature['description']));
+			
+			if ($has_icone || $has_titre || $has_description) {
+				$has_valid_features = true;
+				break;
+			}
+		}
+	}
+	
+	// Si pas de features valides, initialiser avec les valeurs par défaut
+	if (!$has_valid_features) {
+		// Utiliser update_field pour sauvegarder correctement les repeater fields
+		update_field('pourquoi_choisir_features', $default_features, $post_id);
+	}
 }
-add_action('wp_insert_post', 'urbanquest_mark_new_game_post', 10, 3);
+add_action('wp_insert_post', 'urbanquest_init_features_on_new_game', 20, 3);
 
 /**
- * Initialise les fonctionnalités par défaut UNIQUEMENT lors de la création d'un nouveau jeu
+ * Initialise les fonctionnalités par défaut lors de la création ET lors des mises à jour
  * S'exécute après que ACF ait sauvegardé ses champs
+ * Si des features sont vides, elles sont automatiquement remplies avec les valeurs par défaut
  */
-function urbanquest_init_default_features_on_create($post_id) {
+function urbanquest_init_default_features_on_save($post_id) {
 	// Ne s'applique qu'aux posts de type 'game'
 	$post = get_post($post_id);
 	if (!$post || $post->post_type !== 'game') {
 		return;
 	}
 	
-	// VÉRIFICATION PRINCIPALE : Si le post a déjà été initialisé, ne JAMAIS toucher
-	// Cette vérification doit être faite EN PREMIER pour éviter toute réinitialisation
-	$already_initialized = get_post_meta($post_id, '_features_default_initialized', true);
-	if ($already_initialized === 'yes') {
-		// Nettoyer le flag temporaire s'il existe encore
-		delete_post_meta($post_id, '_is_new_game_post');
-		return; // Déjà initialisé, ne jamais toucher - même si le champ est vide
-	}
-	
-	// Vérifier si c'est un nouveau post (marqué lors de wp_insert_post)
-	$is_new_post = get_post_meta($post_id, '_is_new_game_post', true) === 'yes';
-	
-	// Si ce n'est pas un nouveau post, ne rien faire
-	if (!$is_new_post) {
-		return;
-	}
-	
 	// Valeurs par défaut des 3 fonctionnalités
-	$default_features = array(
-		array(
-			'icone' => 'calendar-heart',
-			'titre' => '100% libre',
-			'description' => 'Vous lancez la session quand vous voulez, où vous voulez.'
-		),
-		array(
-			'icone' => 'smartphone',
-			'titre' => 'Ultra simple',
-			'description' => 'Vos instructions de jeu par e-mail, votre smartphone… c\'est tout.'
-		),
-		array(
-			'icone' => 'swords',
-			'titre' => 'Fun & challenge',
-			'description' => 'Défis variés, énigmes malignes, score et classement.'
-		)
-	);
+	$default_features = urbanquest_get_default_features();
 	
 	// Vérifier si le champ existe déjà avec des données
+	// Utiliser get_field pour récupérer les données actuelles
 	$features = get_field('pourquoi_choisir_features', $post_id);
 	
 	// Compter les fonctionnalités valides (au moins un champ rempli)
 	$valid_features_count = 0;
-	$has_empty_items = false;
 	if (!empty($features) && is_array($features)) {
 		foreach ($features as $feature) {
-			if (!empty($feature['icone']) || !empty($feature['titre']) || !empty($feature['description'])) {
+			// Vérifier si au moins un champ est rempli
+			$has_icone = isset($feature['icone']) && !empty(trim($feature['icone']));
+			$has_titre = isset($feature['titre']) && !empty(trim($feature['titre']));
+			$has_description = isset($feature['description']) && !empty(trim($feature['description']));
+			
+			if ($has_icone || $has_titre || $has_description) {
 				$valid_features_count++;
-			} else {
-				$has_empty_items = true;
 			}
 		}
 	}
 	
-	// Si aucune fonctionnalité valide OU si le champ contient des items vides,
-	// initialiser/remplacer avec les valeurs par défaut
+	// Si aucune fonctionnalité valide (champ vide ou toutes les features sont vides),
+	// remplir avec les valeurs par défaut
 	if ($valid_features_count === 0) {
-		// Sauvegarder les valeurs par défaut (remplace les items vides si nécessaire)
+		// Utiliser update_field qui gère correctement les repeater fields ACF
 		update_field('pourquoi_choisir_features', $default_features, $post_id);
-		
-		// Marquer comme initialisé seulement après avoir réellement initialisé
-		update_post_meta($post_id, '_features_default_initialized', 'yes');
-	} else {
-		// Si des fonctionnalités valides existent déjà (l'admin les a peut-être créées manuellement),
-		// marquer aussi comme initialisé pour éviter toute réinitialisation future
-		update_post_meta($post_id, '_features_default_initialized', 'yes');
 	}
 	
-	// Nettoyer le flag temporaire
+	// Nettoyer le flag temporaire s'il existe encore
 	delete_post_meta($post_id, '_is_new_game_post');
 }
-add_action('acf/save_post', 'urbanquest_init_default_features_on_create', 30);
+
+/**
+ * Hook sur acf/save_post avec priorité élevée pour s'exécuter après toutes les sauvegardes ACF
+ */
+add_action('acf/save_post', 'urbanquest_init_default_features_on_save', 99);
+
+/**
+ * Hook sur save_post WordPress pour les jeux (double sécurité)
+ */
+add_action('save_post_game', 'urbanquest_init_default_features_on_save', 99);
+
+/**
+ * Préremplit les features dans l'admin lors de l'affichage du formulaire
+ * Utilise acf/prepare_field pour ajouter les valeurs par défaut avant l'affichage
+ */
+function urbanquest_prepare_features_field($field) {
+	// Ne s'applique qu'au champ pourquoi_choisir_features
+	if ($field['name'] !== 'pourquoi_choisir_features') {
+		return $field;
+	}
+	
+	// Vérifier si c'est un post de type 'game'
+	global $post, $typenow;
+	$post_type = '';
+	if (isset($post) && isset($post->post_type)) {
+		$post_type = $post->post_type;
+	} elseif (isset($typenow)) {
+		$post_type = $typenow;
+	}
+	
+	// Ne s'applique qu'aux posts de type 'game'
+	if ($post_type !== 'game') {
+		return $field;
+	}
+	
+	// Si c'est un nouveau post (pas encore sauvegardé), préremplir avec les valeurs par défaut
+	if (isset($post) && $post->ID && get_post_status($post->ID) === 'auto-draft') {
+		// Ne rien faire ici, laisser wp_insert_post gérer l'initialisation
+		return $field;
+	}
+	
+	return $field;
+}
+add_filter('acf/prepare_field/name=pourquoi_choisir_features', 'urbanquest_prepare_features_field', 10, 1);
 
 // ============================================================================
 // CRÉATION AUTOMATIQUE DES RÉGIONS FRANÇAISES

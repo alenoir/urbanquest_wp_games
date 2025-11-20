@@ -698,5 +698,205 @@
         }, 100);
       });
     }
+
+    // ============================================================================
+    // PRÉREMPLISSAGE AUTOMATIQUE DES FEATURES PAR DÉFAUT
+    // ============================================================================
+
+    /**
+     * Valeurs par défaut des features
+     */
+    var defaultFeatures = [
+      {
+        icone: "calendar-heart",
+        titre: "100% libre",
+        description:
+          "Vous lancez la session quand vous voulez, où vous voulez.",
+      },
+      {
+        icone: "smartphone",
+        titre: "Ultra simple",
+        description:
+          "Vos instructions de jeu par e-mail, votre smartphone… c'est tout.",
+      },
+      {
+        icone: "swords",
+        titre: "Fun & challenge",
+        description: "Défis variés, énigmes malignes, score et classement.",
+      },
+    ];
+
+    /**
+     * Préremplit les features par défaut si le champ est vide
+     */
+    function initDefaultFeatures() {
+      if (typeof acf === "undefined") {
+        return;
+      }
+
+      // Vérifier si on est sur un post de type 'game'
+      var postType = "";
+      if (typeof typenow !== "undefined") {
+        postType = typenow;
+      } else if ($("#post_type").length) {
+        postType = $("#post_type").val();
+      } else if ($("#post_ID").length && $("#post_ID").val() === "0") {
+        // Nouveau post, vérifier l'URL
+        var url = window.location.href;
+        if (url.indexOf("post_type=game") !== -1) {
+          postType = "game";
+        }
+      }
+
+      if (postType !== "game") {
+        return;
+      }
+
+      // Trouver le champ repeater pourquoi_choisir_features
+      var repeaterField = acf.getField("field_pourquoi_choisir_features");
+      if (!repeaterField) {
+        return;
+      }
+
+      // Vérifier si le repeater est vide ou a des lignes vides
+      var rows = repeaterField.$el.find(".acf-row").not(".acf-clone");
+      var hasValidData = false;
+
+      // Vérifier si au moins une ligne a des données valides
+      rows.each(function () {
+        var row = $(this);
+        var icone =
+          row.find('[data-name="icone"] input, input[name*="[icone]"]').val() ||
+          "";
+        var titre =
+          row.find('[data-name="titre"] input, input[name*="[titre]"]').val() ||
+          "";
+        var description =
+          row
+            .find(
+              '[data-name="description"] textarea, textarea[name*="[description]"]'
+            )
+            .val() || "";
+
+        if (icone.trim() || titre.trim() || description.trim()) {
+          hasValidData = true;
+          return false; // break
+        }
+      });
+
+      // Si pas de données valides, initialiser avec les valeurs par défaut
+      if (!hasValidData) {
+        // Si le repeater est vide, ajouter les 3 lignes
+        if (rows.length === 0) {
+          // Ajouter les 3 features une par une
+          for (var i = 0; i < defaultFeatures.length; i++) {
+            repeaterField.add();
+          }
+
+          // Attendre que les lignes soient créées puis les remplir
+          setTimeout(function () {
+            var newRows = repeaterField.$el.find(".acf-row").not(".acf-clone");
+            newRows.each(function (index) {
+              if (index < defaultFeatures.length) {
+                var row = $(this);
+                var feature = defaultFeatures[index];
+
+                // Utiliser les sélecteurs ACF corrects
+                var iconeInput = row
+                  .find('[data-name="icone"] input, input[name*="[icone]"]')
+                  .first();
+                var titreInput = row
+                  .find('[data-name="titre"] input, input[name*="[titre]"]')
+                  .first();
+                var descriptionTextarea = row
+                  .find(
+                    '[data-name="description"] textarea, textarea[name*="[description]"]'
+                  )
+                  .first();
+
+                if (iconeInput.length) {
+                  iconeInput
+                    .val(feature.icone)
+                    .trigger("change")
+                    .trigger("input");
+                }
+                if (titreInput.length) {
+                  titreInput
+                    .val(feature.titre)
+                    .trigger("change")
+                    .trigger("input");
+                }
+                if (descriptionTextarea.length) {
+                  descriptionTextarea
+                    .val(feature.description)
+                    .trigger("change")
+                    .trigger("input");
+                }
+              }
+            });
+          }, 300);
+        } else {
+          // Le repeater a des lignes mais elles sont vides, les remplir
+          rows.each(function (index) {
+            if (index < defaultFeatures.length) {
+              var row = $(this);
+              var feature = defaultFeatures[index];
+
+              var iconeInput = row
+                .find('[data-name="icone"] input, input[name*="[icone]"]')
+                .first();
+              var titreInput = row
+                .find('[data-name="titre"] input, input[name*="[titre]"]')
+                .first();
+              var descriptionTextarea = row
+                .find(
+                  '[data-name="description"] textarea, textarea[name*="[description]"]'
+                )
+                .first();
+
+              if (iconeInput.length) {
+                iconeInput
+                  .val(feature.icone)
+                  .trigger("change")
+                  .trigger("input");
+              }
+              if (titreInput.length) {
+                titreInput
+                  .val(feature.titre)
+                  .trigger("change")
+                  .trigger("input");
+              }
+              if (descriptionTextarea.length) {
+                descriptionTextarea
+                  .val(feature.description)
+                  .trigger("change")
+                  .trigger("input");
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // Initialiser les features par défaut au chargement de la page
+    $(document).ready(function () {
+      if (typeof acf !== "undefined") {
+        // Attendre que ACF soit complètement chargé
+        acf.addAction("ready", function () {
+          setTimeout(function () {
+            initDefaultFeatures();
+          }, 800);
+        });
+
+        // Réinitialiser quand le repeater est ajouté ou modifié
+        acf.addAction("append", function ($el) {
+          if ($el.find('[data-name="pourquoi_choisir_features"]').length) {
+            setTimeout(function () {
+              initDefaultFeatures();
+            }, 300);
+          }
+        });
+      }
+    });
   });
 })(jQuery);
