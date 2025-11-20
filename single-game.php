@@ -310,7 +310,23 @@ do_action('hestia_before_single_post_wrapper');
 	$payment_url_button = urbanquest_get_field_with_default('payment_url', '#');
 	$button_disabled = (empty($payment_url_button) || $payment_url_button === '#');
 	$button_text_button = $button_disabled ? 'Bientôt' : 'Réserve ton jeu d\'exploration';
+	
+	// Ajouter les paramètres UTM côté serveur (disponibles dans $_GET)
 	$button_href_button = $button_disabled ? '#' : $payment_url_button;
+	if (!$button_disabled && !empty($payment_url_button)) {
+		$utm_params = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+		$utm_to_add = [];
+		foreach ($utm_params as $utm_param) {
+			if (!empty($_GET[$utm_param])) {
+				$utm_to_add[$utm_param] = $_GET[$utm_param];
+			}
+		}
+		if (!empty($utm_to_add)) {
+			$separator = strpos($payment_url_button, '?') !== false ? '&' : '?';
+			$button_href_button = $payment_url_button . $separator . http_build_query($utm_to_add);
+		}
+	}
+	
 	$button_style_disabled = $button_disabled ? 'opacity: 0.6; cursor: not-allowed; pointer-events: none;' : '';
 	
 	// Section "Pourquoi choisir" - Champs ACF avec valeurs par défaut
@@ -626,21 +642,17 @@ if (!is_singular('elementor_library') && !is_singular('game')) {
 	/**
 	 * Récupère le GA4 Client ID depuis le cookie _ga
 	 * Format du cookie: GA1.2.XXXXXXXXX.YYYYYYYYY
-	 * On extrait le dernier segment (YYYYYYYYY)
+	 * On extrait les deux derniers segments (XXXXXXXXX.YYYYYYYYY)
 	 */
 	function getGA4ClientId() {
 		try {
-			// Lire le cookie _ga
 			const cookies = document.cookie.split(';');
 			for (let i = 0; i < cookies.length; i++) {
 				const cookie = cookies[i].trim();
 				if (cookie.indexOf('_ga=') === 0) {
-					const gaValue = cookie.substring(4); // Enlever '_ga='
-					// Le format est GA1.2.XXXXXXXXX.YYYYYYYYY
-					// On prend le dernier segment après le dernier point
+					const gaValue = cookie.substring(4);
 					const parts = gaValue.split('.');
 					if (parts.length >= 4) {
-						// Retourner les deux derniers segments (XXXXXXXXX.YYYYYYYYY)
 						return parts.slice(2).join('.');
 					}
 				}
@@ -652,77 +664,12 @@ if (!is_singular('elementor_library') && !is_singular('game')) {
 	}
 	
 	/**
-	 * Récupère les paramètres UTM de l'URL actuelle
-	 * Transmet tous les paramètres UTM présents dans l'URL vers l'API UrbanQuest
-	 * Paramètres attendus par l'API : utm_source, utm_medium, utm_campaign, utm_content
-	 */
-	function getUTMParams() {
-		const params = {};
-		const urlParams = new URLSearchParams(window.location.search);
-		// Liste complète des paramètres UTM (inclut utm_term pour compatibilité)
-		const utmParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
-		
-		utmParams.forEach(function(param) {
-			const value = urlParams.get(param);
-			if (value) {
-				params[param] = value;
-			}
-		});
-		
-		return params;
-	}
-	
-	/**
-	 * Construit l'URL de l'API avec les paramètres GA4 et UTM
-	 * Tous les paramètres sont ajoutés à la query string pour que l'API puisse les récupérer
-	 */
-	function buildCheckoutUrl(originalUrl, gaClientId, utmParams) {
-		try {
-			const url = new URL(originalUrl);
-			
-			// Ajouter le GA4 Client ID (paramètre requis par l'API)
-			if (gaClientId) {
-				url.searchParams.set('ga_client_id', gaClientId);
-			}
-			
-			// Ajouter tous les paramètres UTM présents dans l'URL
-			// L'API récupère : utm_source, utm_medium, utm_campaign, utm_content depuis la query string
-			Object.keys(utmParams).forEach(function(key) {
-				if (utmParams[key]) {
-					url.searchParams.set(key, utmParams[key]);
-				}
-			});
-			
-			return url.toString();
-		} catch (e) {
-			// Si l'URL n'est pas valide ou absolue, essayer de la construire manuellement
-			let separator = originalUrl.indexOf('?') !== -1 ? '&' : '?';
-			let newUrl = originalUrl;
-			
-			// Ajouter le GA4 Client ID
-			if (gaClientId) {
-				newUrl += separator + 'ga_client_id=' + encodeURIComponent(gaClientId);
-				separator = '&';
-			}
-			
-			// Ajouter tous les paramètres UTM
-			Object.keys(utmParams).forEach(function(key) {
-				if (utmParams[key]) {
-					newUrl += separator + key + '=' + encodeURIComponent(utmParams[key]);
-					separator = '&';
-				}
-			});
-			
-			return newUrl;
-		}
-	}
-	
-	/**
-	 * Gère le clic sur le bouton de checkout
+	 * Ajoute le GA4 Client ID à l'URL et ouvre toujours dans un nouvel onglet
+	 * Les paramètres UTM sont déjà ajoutés côté serveur (PHP)
 	 */
 	function handleCheckoutClick(event) {
 		const button = event.currentTarget;
-		const paymentUrl = button.getAttribute('data-payment-url');
+		const paymentUrl = button.href || button.getAttribute('href');
 		
 		// Ne rien faire si le bouton est désactivé ou si l'URL est invalide
 		if (!paymentUrl || paymentUrl === '#' || button.style.pointerEvents === 'none') {
@@ -732,76 +679,42 @@ if (!is_singular('elementor_library') && !is_singular('game')) {
 		// Empêcher la redirection par défaut
 		event.preventDefault();
 		
-		// Récupérer le GA4 Client ID et les UTM
+		// Récupérer le GA4 Client ID
 		const gaClientId = getGA4ClientId();
-		const utmParams = getUTMParams();
 		
-		// Construire l'URL avec les paramètres
-		const checkoutUrl = buildCheckoutUrl(paymentUrl, gaClientId, utmParams);
-		
-		// Debug: afficher les paramètres transmis (désactiver en production)
-		// console.log('GA4 Client ID:', gaClientId);
-		// console.log('UTM Params:', utmParams);
-		// console.log('Checkout URL:', checkoutUrl);
-		
-		// Appeler l'API UrbanQuest
-		// Note: Si l'API doit être appelée en POST ou nécessite une réponse JSON,
-		// il faudra adapter cette partie selon les spécifications de l'API
-		fetch(checkoutUrl, {
-			method: 'GET',
-			headers: {
-				'Accept': 'application/json',
-			},
-			redirect: 'manual' // Ne pas suivre automatiquement la redirection
-		})
-		.then(function(response) {
-			// Si l'API retourne une URL de redirection dans le JSON
-			if (response.ok && response.headers.get('content-type') && response.headers.get('content-type').includes('application/json')) {
-				return response.json().then(function(data) {
-					if (data.checkout_url || data.url || data.redirect_url) {
-						window.location.href = data.checkout_url || data.url || data.redirect_url;
-					} else {
-						// Fallback: utiliser l'URL originale
-						window.location.href = checkoutUrl;
-					}
-				});
+		// Ajouter le GA4 Client ID à l'URL si disponible
+		let checkoutUrl = paymentUrl;
+		if (gaClientId) {
+			try {
+				const url = new URL(paymentUrl);
+				url.searchParams.set('ga_client_id', gaClientId);
+				checkoutUrl = url.toString();
+			} catch (e) {
+				// Fallback si l'URL n'est pas valide
+				const separator = paymentUrl.indexOf('?') !== -1 ? '&' : '?';
+				checkoutUrl = paymentUrl + separator + 'ga_client_id=' + encodeURIComponent(gaClientId);
 			}
-			// Si l'API retourne directement une redirection HTTP
-			if (response.status >= 300 && response.status < 400) {
-				const redirectUrl = response.headers.get('Location');
-				if (redirectUrl) {
-					window.location.href = redirectUrl;
-					return;
-				}
-			}
-			// Fallback: rediriger vers l'URL construite
-			window.location.href = checkoutUrl;
-		})
-		.catch(function(error) {
-			console.error('Erreur lors de l\'appel à l\'API UrbanQuest:', error);
-			// En cas d'erreur, rediriger quand même vers l'URL avec les paramètres
-			window.location.href = checkoutUrl;
-		});
+		}
+		
+		// Ouvrir toujours dans un nouvel onglet
+		window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
 	}
 	
-	// Attendre que le DOM soit chargé
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
-	} else {
-		init();
-	}
-	
+	// Attacher les event listeners au chargement du DOM
 	function init() {
-		// Attacher les event listeners aux boutons de checkout
 		const checkoutButtons = document.querySelectorAll('.urbanquest-checkout-btn');
-		
 		checkoutButtons.forEach(function(button) {
-			// Ne pas attacher l'event listener si le bouton est désactivé
-			const paymentUrl = button.getAttribute('data-payment-url');
+			const paymentUrl = button.href || button.getAttribute('href');
 			if (paymentUrl && paymentUrl !== '#' && button.style.pointerEvents !== 'none') {
 				button.addEventListener('click', handleCheckoutClick);
 			}
 		});
+	}
+	
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
 	}
 })();
 </script>
