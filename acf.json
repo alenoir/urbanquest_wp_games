@@ -207,6 +207,26 @@
         "delay": 0
       },
       {
+        "key": "field_game_footer_description",
+        "label": "Footer description",
+        "name": "footer_description",
+        "aria-label": "",
+        "type": "wysiwyg",
+        "instructions": "Description affichée dans le footer de la page (section \"En groupe ?\" et \"Imaginés par nos game designers\"). Utilisez [ville] pour remplacer par le nom de la ville et [url_contact] pour le lien vers la page de contact.",
+        "required": 0,
+        "conditional_logic": 0,
+        "wrapper": {
+          "width": "",
+          "class": "",
+          "id": ""
+        },
+        "default_value": "<h3>En groupe ?</h3>\n<p>Pour les grands groupes nous proposons des options personnalisées sur demande pour rendre le jeu encore plus inoubliable, il suffit de nous <a href=\"[url_contact]\" rel=\"nofollow\">contacter</a>.</p>\n\n<h3>Imaginés par nos game designers</h3>\n<p>Nos jeux sont conçus à la main par des game designers, en lien direct avec l'histoire et la géographie de [ville]... pour une expérience authentique et unique.</p>",
+        "tabs": "all",
+        "toolbar": "full",
+        "media_upload": 1,
+        "delay": 0
+      },
+      {
         "key": "field_tab_prix",
         "label": "Configuration de paiement",
         "name": "",

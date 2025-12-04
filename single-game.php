@@ -265,6 +265,23 @@ do_action('hestia_before_single_post_wrapper');
 	// Description principale
 	$description_principale = get_field('description_principale');
 	
+	// Footer description (section "En groupe ?" et "Imaginés par nos game designers")
+	$footer_description_default = '<h3>En groupe ?</h3>
+<p>Pour les grands groupes nous proposons des options personnalisées sur demande pour rendre le jeu encore plus inoubliable, il suffit de nous <a href="[url_contact]" rel="nofollow">contacter</a>.</p>
+
+<h3>Imaginés par nos game designers</h3>
+<p>Nos jeux sont conçus à la main par des game designers, en lien direct avec l\'histoire et la géographie de [ville]... pour une expérience authentique et unique.</p>';
+	
+	$footer_description = get_field('footer_description');
+	if (empty($footer_description)) {
+		$footer_description = $footer_description_default;
+	}
+	
+	// Remplacer les placeholders
+	$contact_url = get_site_url() . '/contact/';
+	$footer_description = str_replace('[ville]', $ville_name, $footer_description);
+	$footer_description = str_replace('[url_contact]', esc_url($contact_url), $footer_description);
+	
 	// Section infos
 	$titre_section_infos = "+ d'infos sur le jeu";
 	
@@ -407,11 +424,11 @@ do_action('hestia_before_single_post_wrapper');
 							<?php endif; ?>
 
 							<img src="<?php echo esc_url(get_site_url() . '/wp-content/uploads/2025/10/notation-urbanquest-1024x219.png'); ?>" alt="Notation et avis Urban Quest - Jeu de piste à <?php echo esc_attr($ville_name); ?>" width="750" height="160" class="aligncenter size-large wp-image-26992" loading="lazy" />
-							<h3>En groupe ?</h3>
-							<p style="margin-top: 10px;">Pour les grands groupes nous proposons des options personnalisées sur demande pour rendre le jeu encore plus inoubliable, il suffit de nous <a href="<?php echo esc_url(get_site_url() . '/contact/'); ?>" rel="nofollow">contacter</a>.</p>
-
-							<h3>Imaginés par nos game designers</h3>
-							<p>Nos jeux sont conçus à la main par des game designers, en lien direct avec l'histoire et la géographie de <?php echo esc_html($ville_name); ?>... pour une expérience authentique et unique.</p>
+							
+							<?php 
+							// Afficher la description du footer (section "En groupe ?" et "Imaginés par nos game designers")
+							echo wp_kses_post($footer_description);
+							?>
 						</div>
 
 						<div class="col-md-6 game-sidebar-card" style="position: sticky; top: 20px;">
