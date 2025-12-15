@@ -652,9 +652,42 @@ if (!is_singular('elementor_library') && !is_singular('game')) {
 <div class="footer-wrapper">
 <?php get_footer(); ?>
 
+<?php
+// Préparer les données pour le tracking GA4
+if (have_posts()) {
+	the_post();
+	$game_id = get_the_ID();
+	$payment_url_button = urbanquest_get_field_with_default('payment_url', '#');
+	$game_title = get_the_title();
+	$prix_numeric = preg_replace('/[^0-9]/', '', urbanquest_get_field_with_default('prix', '39€'));
+	
+	// Extraire le gameSessionId de l'URL de paiement
+	$game_session_id = null;
+	if (!empty($payment_url_button) && $payment_url_button !== '#') {
+		$parsed_url = parse_url($payment_url_button);
+		if (isset($parsed_url['query'])) {
+			parse_str($parsed_url['query'], $query_params);
+			if (isset($query_params['gameSessionId'])) {
+				$game_session_id = $query_params['gameSessionId'];
+			}
+		}
+	}
+	
+	rewind_posts();
+}
+?>
+
 <script>
 (function() {
 	'use strict';
+	
+	// Données du produit pour le tracking GA4
+	const productData = {
+		itemId: <?php echo $game_session_id ? json_encode($game_session_id) : 'null'; ?>,
+		itemName: <?php echo json_encode($game_title); ?>,
+		price: <?php echo !empty($prix_numeric) ? floatval($prix_numeric) : 39; ?>,
+		currency: 'EUR'
+	};
 	
 	/**
 	 * Récupère le GA4 Client ID depuis le cookie _ga
@@ -678,6 +711,97 @@ if (!is_singular('elementor_library') && !is_singular('game')) {
 			console.warn('Erreur lors de la récupération du GA4 Client ID:', e);
 		}
 		return null;
+	}
+	
+	/**
+	 * Extrait le gameSessionId d'une URL de paiement
+	 */
+	function extractGameSessionId(url) {
+		if (!url || url === '#') {
+			return null;
+		}
+		try {
+			const urlObj = new URL(url);
+			return urlObj.searchParams.get('gameSessionId');
+		} catch (e) {
+			// Fallback pour les URLs relatives ou mal formées
+			const match = url.match(/[?&]gameSessionId=([^&]+)/);
+			return match ? match[1] : null;
+		}
+	}
+	
+	/**
+	 * Envoie l'événement view_item à GA4
+	 * 
+	 * IMPORTANT : Cet événement tracke la VUE du produit (affichage sur la page).
+	 * Les données de prix/currency ici sont celles affichées sur la page.
+	 * 
+	 * Lors d'un achat (événement purchase), les données réelles de l'achat
+	 * seront envoyées depuis votre API Stripe. GA4 reconnaîtra que c'est le même
+	 * produit grâce à l'item_id (gameSessionId) qui est identique.
+	 * 
+	 * Les deux événements coexistent dans GA4 :
+	 * - view_item : données affichées sur la page (peut inclure prix affiché)
+	 * - purchase : données réelles de l'achat (prix réel payé, nom réel du produit)
+	 * 
+	 * GA4 n'override pas les événements, mais agrège les données par item_id dans les rapports.
+	 * Si les données diffèrent légèrement, c'est normal et attendu.
+	 */
+	function trackProductView() {
+		// Vérifier que gtag est disponible (GA4 doit être chargé)
+		if (typeof gtag === 'undefined') {
+			console.warn('GA4 (gtag) n\'est pas chargé. Le tracking des vues de produit ne peut pas être effectué.');
+			return;
+		}
+		
+		// Si on n'a pas d'itemId depuis PHP, essayer de l'extraire de l'URL de paiement
+		let itemId = productData.itemId;
+		if (!itemId) {
+			const checkoutButton = document.querySelector('.urbanquest-checkout-btn');
+			if (checkoutButton) {
+				const paymentUrl = checkoutButton.href || checkoutButton.getAttribute('href') || checkoutButton.getAttribute('data-payment-url');
+				itemId = extractGameSessionId(paymentUrl);
+			}
+		}
+		
+		// Ne rien faire si on n'a pas d'ID de produit
+		if (!itemId) {
+			console.warn('Impossible de trouver le gameSessionId pour le tracking GA4.');
+			return;
+		}
+		
+		/**
+		 * STRATÉGIE RECOMMANDÉE :
+		 * 
+		 * OPTION 1 (recommandée) : Envoyer uniquement item_id et item_name
+		 * - Évite les conflits de données avec purchase
+		 * - Les données financières réelles seront dans purchase depuis Stripe
+		 * 
+		 * OPTION 2 : Inclure les données financières affichées
+		 * - Permet de tracker les vues avec prix affiché
+		 * - GA4 comprendra que ce sont les données "affichées" vs "réelles" de purchase
+		 * - Les deux événements coexistent sans problème grâce au même item_id
+		 * 
+		 * ACTUELLEMENT : Option 1 (sans données financières)
+		 * Pour activer l'option 2, décommentez les lignes price/currency/value ci-dessous
+		 */
+		
+		// Envoyer l'événement view_item à GA4
+		const viewItemData = {
+			items: [{
+				item_id: itemId,
+				item_name: productData.itemName
+				price: productData.price,
+				currency: productData.currency
+			}]
+
+			currency: productData.currency,
+			value: productData.price
+		};
+		
+		gtag('event', 'view_item', viewItemData);
+		
+
 	}
 	
 	/**
@@ -726,6 +850,21 @@ if (!is_singular('elementor_library') && !is_singular('game')) {
 				button.addEventListener('click', handleCheckoutClick);
 			}
 		});
+		
+		// Tracker la vue du produit une fois que GA4 est chargé
+		// Attendre que gtag soit disponible (avec un timeout de sécurité)
+		let attempts = 0;
+		const maxAttempts = 50; // 5 secondes max (50 * 100ms)
+		const checkGtag = setInterval(function() {
+			attempts++;
+			if (typeof gtag !== 'undefined') {
+				clearInterval(checkGtag);
+				trackProductView();
+			} else if (attempts >= maxAttempts) {
+				clearInterval(checkGtag);
+				console.warn('GA4 (gtag) n\'a pas été chargé dans les délais. Le tracking des vues de produit ne peut pas être effectué.');
+			}
+		}, 100);
 	}
 	
 	if (document.readyState === 'loading') {
