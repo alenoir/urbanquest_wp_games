@@ -29,7 +29,14 @@ if ((!empty($game_tags) && !is_wp_error($game_tags)) || (!empty($game_categories
 		<?php endif; ?>
 		<?php if (!empty($game_categories) && !is_wp_error($game_categories)) : ?>
 			<?php foreach ($game_categories as $category) : ?>
-				<span class="game-category-badge"><?php echo esc_html($category->name); ?></span>
+				<?php $category_link = get_term_link($category, 'game_category'); ?>
+				<?php if (!is_wp_error($category_link)) : ?>
+					<a href="<?php echo esc_url($category_link); ?>" class="game-category-badge" style="text-decoration: none;">
+						<?php echo esc_html($category->name); ?>
+					</a>
+				<?php else : ?>
+					<span class="game-category-badge"><?php echo esc_html($category->name); ?></span>
+				<?php endif; ?>
 			<?php endforeach; ?>
 		<?php endif; ?>
 	</div>

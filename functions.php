@@ -86,7 +86,10 @@ add_action('init', 'urbanquest_register_game_tag_taxonomy', 0);
 
 /**
  * Enregistrer la taxonomie personnalisée "game_category" (Type de jeu) pour les jeux
+ * NOTE: Cette taxonomie est maintenant gérée par ACF via acf.json
+ * L'enregistrement via functions.php est désactivé pour éviter les conflits
  */
+/*
 function urbanquest_register_game_category_taxonomy() {
 	$labels = array(
 		'name'              => 'Types de jeu',
@@ -104,6 +107,7 @@ function urbanquest_register_game_category_taxonomy() {
 		'hierarchical'      => true,
 		'labels'            => $labels,
 		'show_ui'           => true,
+		'show_in_menu'      => true,
 		'show_admin_column' => true,
 		'query_var'         => true,
 		'rewrite'           => array('slug' => 'type-jeu'),
@@ -113,26 +117,35 @@ function urbanquest_register_game_category_taxonomy() {
 	register_taxonomy('game_category', array('game'), $args);
 }
 add_action('init', 'urbanquest_register_game_category_taxonomy', 0);
+*/
 
 /**
- * Créer les termes par défaut pour la taxonomie "game_category"
+ * Fonction temporaire pour supprimer la taxonomie game_category existante
+ * À exécuter une seule fois, puis à supprimer du code
+ * VISITEZ UNE PAGE ADMIN WORDPRESS POUR L'EXÉCUTER, PUIS RE-COMMENTEZ CETTE FONCTION
  */
-function urbanquest_create_default_game_categories() {
-	// Vérifier si les termes existent déjà
-	if (!term_exists('famille', 'game_category')) {
-		wp_insert_term('Famille', 'game_category', array('slug' => 'famille'));
+/*
+function urbanquest_delete_existing_game_category_taxonomy() {
+	// Supprimer tous les termes de la taxonomie
+	$terms = get_terms(array(
+		'taxonomy' => 'game_category',
+		'hide_empty' => false,
+	));
+	
+	if (!is_wp_error($terms) && !empty($terms)) {
+		foreach ($terms as $term) {
+			wp_delete_term($term->term_id, 'game_category');
+		}
 	}
-	if (!term_exists('evg-evgf', 'game_category')) {
-		wp_insert_term('EVG/EVGF', 'game_category', array('slug' => 'evg-evgf'));
-	}
-	if (!term_exists('kids', 'game_category')) {
-		wp_insert_term('Kids', 'game_category', array('slug' => 'kids'));
-	}
-	if (!term_exists('team-building', 'game_category')) {
-		wp_insert_term('team building', 'game_category', array('slug' => 'team-building'));
+	
+	// Désenregistrer la taxonomie
+	global $wp_taxonomies;
+	if (isset($wp_taxonomies['game_category'])) {
+		unset($wp_taxonomies['game_category']);
 	}
 }
-add_action('init', 'urbanquest_create_default_game_categories', 1);
+add_action('admin_init', 'urbanquest_delete_existing_game_category_taxonomy');
+*/
 
 // Supprimer uniquement les métadonnées "publié par" pour les post types personnalisés
 add_action('template_redirect', function() {
@@ -1813,6 +1826,14 @@ function urbanquest_add_game_badges_header_styles() {
 			border: 1px solid rgba(255, 255, 255, 0.8);
 			backdrop-filter: blur(10px);
 			transition: all 0.3s ease;
+		}
+		
+		.game-header-badges-wrapper .game-category-badge {
+			text-decoration: none;
+		}
+		
+		.game-header-badges-wrapper .game-category-badge:visited {
+			color: white;
 		}
 		
 		.game-header-badges-wrapper .game-tag-badge:hover,
