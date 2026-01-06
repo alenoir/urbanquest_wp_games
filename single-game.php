@@ -195,6 +195,52 @@ do_action('hestia_before_single_post_wrapper');
 		font-size: 14px !important;
 	}
 	
+	/* Styles pour les badges de tags et catégories */
+	.game-meta-badges {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin: 0 0 24px;
+	}
+	
+	.game-tags-container {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		flex: 1;
+	}
+	
+	.game-tag-badge {
+		display: inline-block;
+		background: #E6ECF4;
+		color: #1f2a37;
+		padding: 6px 12px;
+		border-radius: 16px;
+		font-size: 14px;
+		font-weight: 500;
+		line-height: 1.4;
+	}
+	
+	.game-categories-container {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		justify-content: flex-end;
+	}
+	
+	.game-category-badge {
+		display: inline-block;
+		background: #00bbff;
+		color: white;
+		padding: 6px 12px;
+		border-radius: 16px;
+		font-size: 14px;
+		font-weight: 500;
+		line-height: 1.4;
+	}
+	
 	/* Layout responsive pour les pages de jeu */
 	@media (max-width: 991px) {
 		.game-sidebar-card,
@@ -211,6 +257,17 @@ do_action('hestia_before_single_post_wrapper');
 		
 		.game-feature-card {
 			width: 100% !important;
+		}
+		
+		/* Badges responsive : empiler verticalement sur mobile */
+		.game-meta-badges {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+		
+		.game-categories-container {
+			justify-content: flex-start;
+			width: 100%;
 		}
 	}
 </style>

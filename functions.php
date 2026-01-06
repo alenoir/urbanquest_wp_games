@@ -54,6 +54,86 @@ function urbanquest_remove_editor_support() {
 }
 add_action('init', 'urbanquest_remove_editor_support', 100);
 
+/**
+ * Enregistrer la taxonomie personnalisée "game_tag" pour les jeux
+ */
+function urbanquest_register_game_tag_taxonomy() {
+	$labels = array(
+		'name'              => 'Tags de jeu',
+		'singular_name'     => 'Tag de jeu',
+		'search_items'      => 'Rechercher des tags',
+		'all_items'         => 'Tous les tags',
+		'edit_item'         => 'Modifier le tag',
+		'update_item'       => 'Mettre à jour le tag',
+		'add_new_item'      => 'Ajouter un nouveau tag',
+		'new_item_name'     => 'Nom du nouveau tag',
+		'menu_name'         => 'Tags de jeu',
+	);
+
+	$args = array(
+		'hierarchical'      => false,
+		'labels'            => $labels,
+		'show_ui'           => true,
+		'show_admin_column' => true,
+		'query_var'         => true,
+		'rewrite'           => array('slug' => 'tag-jeu'),
+		'show_in_rest'      => true,
+	);
+
+	register_taxonomy('game_tag', array('game'), $args);
+}
+add_action('init', 'urbanquest_register_game_tag_taxonomy', 0);
+
+/**
+ * Enregistrer la taxonomie personnalisée "game_category" (Type de jeu) pour les jeux
+ */
+function urbanquest_register_game_category_taxonomy() {
+	$labels = array(
+		'name'              => 'Types de jeu',
+		'singular_name'     => 'Type de jeu',
+		'search_items'      => 'Rechercher des types',
+		'all_items'         => 'Tous les types',
+		'edit_item'         => 'Modifier le type',
+		'update_item'       => 'Mettre à jour le type',
+		'add_new_item'      => 'Ajouter un nouveau type',
+		'new_item_name'     => 'Nom du nouveau type',
+		'menu_name'         => 'Types de jeu',
+	);
+
+	$args = array(
+		'hierarchical'      => true,
+		'labels'            => $labels,
+		'show_ui'           => true,
+		'show_admin_column' => true,
+		'query_var'         => true,
+		'rewrite'           => array('slug' => 'type-jeu'),
+		'show_in_rest'      => true,
+	);
+
+	register_taxonomy('game_category', array('game'), $args);
+}
+add_action('init', 'urbanquest_register_game_category_taxonomy', 0);
+
+/**
+ * Créer les termes par défaut pour la taxonomie "game_category"
+ */
+function urbanquest_create_default_game_categories() {
+	// Vérifier si les termes existent déjà
+	if (!term_exists('famille', 'game_category')) {
+		wp_insert_term('Famille', 'game_category', array('slug' => 'famille'));
+	}
+	if (!term_exists('evg-evgf', 'game_category')) {
+		wp_insert_term('EVG/EVGF', 'game_category', array('slug' => 'evg-evgf'));
+	}
+	if (!term_exists('kids', 'game_category')) {
+		wp_insert_term('Kids', 'game_category', array('slug' => 'kids'));
+	}
+	if (!term_exists('team-building', 'game_category')) {
+		wp_insert_term('team building', 'game_category', array('slug' => 'team-building'));
+	}
+}
+add_action('init', 'urbanquest_create_default_game_categories', 1);
+
 // Supprimer uniquement les métadonnées "publié par" pour les post types personnalisés
 add_action('template_redirect', function() {
 	$post_types = array('game', 'country', 'region', 'departement', 'ville');
@@ -1682,6 +1762,136 @@ function urbanquest_custom_header_styles() {
 	<?php
 }
 add_action('wp_head', 'urbanquest_custom_header_styles', 20);
+
+/**
+ * Ajouter les styles CSS pour les badges dans le header
+ */
+function urbanquest_add_game_badges_header_styles() {
+	if (!is_singular('game')) {
+		return;
+	}
+	?>
+	<style>
+		/* Styles pour les badges dans le header */
+		.page-header {
+			position: relative;
+		}
+		
+		/* Positionner les badges dans le page-header après le titre */
+		.page-header .game-header-badges-wrapper {
+			position: relative;
+			margin-top: 16px;
+			margin-bottom: 0;
+		}
+		
+		.page-header .game-header-badges-wrapper .game-meta-badges {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 12px;
+		}
+		
+		.game-header-badges-wrapper .game-meta-badges {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 8px;
+			padding: 0 15px;
+		}
+		
+		.game-header-badges-wrapper .game-tag-badge,
+		.game-header-badges-wrapper .game-category-badge {
+			display: inline-block;
+			background: rgba(75, 50, 100, 0);
+			color: white;
+			padding: 8px 16px;
+			border-radius: 10px;
+			font-size: 14px;
+			font-weight: 700;
+			border: 1px solid rgba(255, 255, 255, 0.8);
+			backdrop-filter: blur(10px);
+			transition: all 0.3s ease;
+		}
+		
+		.game-header-badges-wrapper .game-tag-badge:hover,
+		.game-header-badges-wrapper .game-category-badge:hover {
+			background: rgba(75, 50, 100, 0.8);
+			border-color: rgba(255, 255, 255, 1);
+		}
+		
+		@media (max-width: 768px) {
+			.game-header-badges-wrapper .game-meta-badges {
+				justify-content: center;
+			}
+		}
+	</style>
+	<?php
+}
+add_action('wp_head', 'urbanquest_add_game_badges_header_styles', 25);
+
+/**
+ * Filtrer le titre pour ajouter les badges après dans le header
+ * Utilise le filtre the_title pour modifier le titre affiché dans le page-header
+ */
+function urbanquest_add_badges_after_title_in_header($title, $id = null) {
+	// Ne modifier que pour les single games
+	if (!is_singular('game')) {
+		return $title;
+	}
+	
+	// Vérifier qu'on modifie le bon post
+	if ($id !== null && $id !== get_the_ID()) {
+		return $title;
+	}
+	
+	// Vérifier qu'on est dans le contexte du header (page-header)
+	// On utilise une variable globale pour tracker si on est dans le header
+	global $urbanquest_in_page_header;
+	if (!isset($urbanquest_in_page_header) || !$urbanquest_in_page_header) {
+		return $title;
+	}
+	
+	$game_id = get_the_ID();
+	
+	// Récupérer les tags du jeu
+	$game_tags = get_the_terms($game_id, 'game_tag');
+	
+	// Récupérer les catégories (types de jeu) du jeu
+	$game_categories = get_the_terms($game_id, 'game_category');
+	
+	// Construire le HTML des badges
+	$badges_html = '';
+	if ((!empty($game_tags) && !is_wp_error($game_tags)) || (!empty($game_categories) && !is_wp_error($game_categories))) {
+		ob_start();
+		get_template_part('template-parts/header-game-badges');
+		$badges_html = ob_get_clean();
+	}
+	
+	return $title . $badges_html;
+}
+add_filter('the_title', 'urbanquest_add_badges_after_title_in_header', 10, 2);
+
+/**
+ * Activer le contexte header avant l'affichage du titre
+ */
+function urbanquest_set_header_context() {
+	if (is_singular('game')) {
+		global $urbanquest_in_page_header;
+		$urbanquest_in_page_header = true;
+	}
+}
+add_action('wp', 'urbanquest_set_header_context', 1);
+
+/**
+ * Désactiver le contexte header après l'affichage du header
+ */
+function urbanquest_unset_header_context() {
+	global $urbanquest_in_page_header;
+	$urbanquest_in_page_header = false;
+}
+add_action('hestia_before_single_post_wrapper', 'urbanquest_unset_header_context', 999);
 
 /**
  * Ajouter le breadcrumb dans le header (déjà implémenté)
